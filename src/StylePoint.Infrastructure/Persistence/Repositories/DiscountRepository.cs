@@ -37,4 +37,9 @@ public class DiscountRepository : IDiscountRepository
             await _context.SaveChangesAsync();
         }
     }
+
+    public async Task<Discount?> GetByCodeAsync(string code)
+    {
+        return await _context.Discounts.FindAsync(code);
+    }
 }

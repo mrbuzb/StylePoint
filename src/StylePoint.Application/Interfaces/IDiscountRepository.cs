@@ -1,4 +1,5 @@
-﻿using StylePoint.Domain.Entities;
+﻿using StylePoint.Application.Dtos;
+using StylePoint.Domain.Entities;
 
 namespace StylePoint.Application.Interfaces;
 
@@ -9,4 +10,5 @@ public interface IDiscountRepository
     Task AddAsync(Discount discount);
     Task UpdateAsync(Discount discount);
     Task DeleteAsync(long id);
+    Task<Discount?> GetByCodeAsync(string code);
 }

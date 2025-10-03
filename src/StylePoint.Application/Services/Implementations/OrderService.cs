@@ -11,15 +11,18 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepo;
     private readonly ICartItemRepository _cartRepo;
     private readonly IOrderItemRepository _orderItemRepo;
+    private readonly IProductVariantRepository _productVariantRepo;
 
     public OrderService(
         IOrderRepository orderRepo,
         ICartItemRepository cartRepo,
-        IOrderItemRepository orderItemRepo)
+        IOrderItemRepository orderItemRepo,
+        IProductVariantRepository productVariantRepo)
     {
         _orderRepo = orderRepo;
         _cartRepo = cartRepo;
         _orderItemRepo = orderItemRepo;
+        _productVariantRepo = productVariantRepo;
     }
 
     public async Task<OrderDto> PlaceOrderAsync(long userId, OrderCreateDto dto)
@@ -28,26 +31,42 @@ public class OrderService : IOrderService
         if (!cartItems.Any())
             throw new InvalidOperationException("Cart is empty.");
 
-        var total = cartItems.Sum(c => c.UnitPrice * c.Quantity);
+        decimal total = 0;
+        var orderItems = new List<OrderItem>();
+
+        foreach (var cartItem in cartItems)
+        {
+            var variant = await _productVariantRepo.GetByIdAsync(cartItem.ProductVariantId);
+            if (variant == null)
+                throw new InvalidOperationException("Product not found.");
+
+            if (cartItem.Quantity > variant.Stock)
+                throw new InvalidOperationException(
+                    $"'{variant.Size}' uchun yetarli stock mavjud emas. Qolgan: {variant.Stock}");
+
+            variant.Stock -= cartItem.Quantity;
+            await _productVariantRepo.UpdateAsync(variant);
+
+            total += cartItem.UnitPrice * cartItem.Quantity;
+
+            orderItems.Add(new OrderItem
+            {
+                ProductVariantId = cartItem.ProductVariantId,
+                Quantity = cartItem.Quantity,
+                UnitPrice = cartItem.UnitPrice
+            });
+        }
 
         var order = new Order
         {
             UserId = userId,
             AddressId = dto.AddressId,
             TotalPrice = total,
-            Status = OrderStatus.Pending
+            Status = OrderStatus.Pending,
+            OrderItems = orderItems
         };
 
         await _orderRepo.AddAsync(order);
-
-        var orderItems = cartItems.Select(c => new OrderItem
-        {
-            Order = order,
-            ProductVariantId = c.ProductVariantId,
-            Quantity = c.Quantity,
-            UnitPrice = c.UnitPrice
-        }).ToList();
-
         await _orderItemRepo.AddRangeAsync(orderItems);
 
         await _cartRepo.ClearUserCartAsync(userId);

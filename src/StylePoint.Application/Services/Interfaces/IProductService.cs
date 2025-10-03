@@ -12,4 +12,7 @@ public interface IProductService
     Task<ICollection<ProductDto>> GetByTagAsync(long tagId);
     Task<ICollection<ProductDto>> GetBestSellersAsync();
     Task<ICollection<ProductDto>> GetNewArrivalsAsync();
+    Task<ProductDto> UpdateProductAsync(long productId, ProductUpdateDto dto);
+    Task<ProductDto> AddProductAsync(ProductCreateDto dto);
+    Task<bool> DeleteProductAsync(long productId);
 }
