@@ -44,8 +44,8 @@ public class OrderService : IOrderService
                 throw new InvalidOperationException(
                     $"'{variant.Size}' uchun yetarli stock mavjud emas. Qolgan: {variant.Stock}");
 
-            variant.Stock -= cartItem.Quantity;
-            await _productVariantRepo.UpdateAsync(variant);
+            // ❌ variant.Stock -= cartItem.Quantity;   // O'chirildi
+            // ❌ await _productVariantRepo.UpdateAsync(variant);
 
             total += cartItem.UnitPrice * cartItem.Quantity;
 
@@ -53,7 +53,7 @@ public class OrderService : IOrderService
             {
                 ProductVariantId = cartItem.ProductVariantId,
                 Quantity = cartItem.Quantity,
-                UnitPrice = cartItem.UnitPrice
+                UnitPrice = cartItem.UnitPrice,
             });
         }
 
@@ -67,12 +67,11 @@ public class OrderService : IOrderService
         };
 
         await _orderRepo.AddAsync(order);
-        await _orderItemRepo.AddRangeAsync(orderItems);
-
         await _cartRepo.ClearUserCartAsync(userId);
 
         return MapToDto(order, orderItems);
     }
+
 
     public async Task<OrderDto?> GetByIdAsync(long userId, long orderId)
     {
@@ -97,9 +96,20 @@ public class OrderService : IOrderService
         if (order.Status == OrderStatus.Completed)
             throw new InvalidOperationException("Completed orders cannot be canceled.");
 
+        foreach (var item in order.OrderItems)
+        {
+            var variant = await _productVariantRepo.GetByIdAsync(item.ProductVariantId);
+            if (variant != null)
+            {
+                variant.Stock += item.Quantity;
+                await _productVariantRepo.UpdateAsync(variant);
+            }
+        }
+
         order.Status = OrderStatus.Canceled;
         await _orderRepo.UpdateAsync(order);
     }
+
 
     private static OrderDto MapToDto(Order order, IEnumerable<OrderItem> items) =>
         new OrderDto

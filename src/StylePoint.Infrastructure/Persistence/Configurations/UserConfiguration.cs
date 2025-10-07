@@ -33,6 +33,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .WithOne(o => o.User)
                .HasForeignKey(o => o.UserId);
 
+        builder.HasOne(x => x.Card)
+               .WithOne(o => o.User)
+               .HasForeignKey<User>(o => o.UserId);
+
         builder.HasMany(x => x.CartItems)
                .WithOne(c => c.User)
                .HasForeignKey(c => c.UserId);

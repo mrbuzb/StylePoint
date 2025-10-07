@@ -1,4 +1,5 @@
-﻿using StylePoint.Domain.Enums;
+﻿using StylePoint.Domain.Entities;
+using StylePoint.Domain.Enums;
 
 namespace StylePoint.Application.Dtos;
 
@@ -12,4 +13,5 @@ public class PaymentDto
 
     public long OrderId { get; set; }
     public long UserId { get; set; }
+    public long? CardId { get; set; }
 }

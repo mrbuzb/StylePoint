@@ -52,8 +52,17 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.MapAuthEndpoints();
 app.MapAdminEndpoints();
+app.MapProductEndpoints();
+app.MapCategoryEndpoints();
+app.MapCartEndpoints();
+app.MapOrderEndpoints();
+app.MapDeliveryAddressEndpoints();
+app.MapTagEndpoints();
+app.MapPaymentEndpoints();
+app.MapBrandEndpoints();
 
 app.MapControllers();
 

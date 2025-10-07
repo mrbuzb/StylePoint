@@ -1,6 +1,7 @@
 ﻿using StylePoint.Application.Dtos;
 using StylePoint.Application.Interfaces;
 using StylePoint.Application.Services.Interfaces;
+using StylePoint.Core.Errors;
 using StylePoint.Domain.Entities;
 using StylePoint.Domain.Enums;
 
@@ -9,25 +10,91 @@ namespace StylePoint.Application.Services.Implementations;
 public class PaymentService : IPaymentService
 {
     private readonly IPaymentRepository _paymentRepository;
-
-    public PaymentService(IPaymentRepository paymentRepository)
+    private readonly IProductVariantRepository _productVariantRepo;
+    private readonly IOrderRepository _orderRepo;
+    private readonly ICardRepository _cardRepo;
+    public PaymentService(IPaymentRepository paymentRepository, IProductVariantRepository productVariantRepo, IOrderRepository orderRepo, ICardRepository cardRepo)
     {
         _paymentRepository = paymentRepository;
+        _productVariantRepo = productVariantRepo;
+        _orderRepo = orderRepo;
+        _cardRepo = cardRepo;
     }
 
 
     public async Task<PaymentDto> ProcessPaymentAsync(long userId, PaymentCreateDto dto)
     {
-        var payment = new Payment
+        var card = await _cardRepo.GetByIdAsync(userId);
+
+        var order = await _orderRepo.GetByIdAsync(dto.OrderId);
+
+        if (order == null || order.UserId != userId)
+            throw new InvalidOperationException("Order not found.");
+
+        if (order.Status != OrderStatus.Pending)
+            throw new InvalidOperationException("Order already processed.");
+
+        if (dto.Method == PaymentMethod.Card)
         {
-            Amount = dto.Amount,
+            if (card == null || card.UserId != userId)
+                throw new NotAllowedException("Card not found or not accessible");
+            if (card.Balance < order.TotalPrice)
+                throw new NotAllowedException("Card balance is insufficient");
+        }
+
+        foreach (var item in order.OrderItems)
+        {
+            var variant = await _productVariantRepo.GetByIdAsync(item.ProductVariantId);
+            if (variant == null)
+                throw new InvalidOperationException("Product variant not found.");
+
+            if (item.Quantity > variant.Stock)
+                throw new InvalidOperationException(
+                    $"'{variant.Size}' uchun yetarli stock mavjud emas. Qolgan: {variant.Stock}");
+
+            variant.Stock -= item.Quantity;
+            await _productVariantRepo.UpdateAsync(variant);
+        }
+        var payment = new Payment();
+        if (dto.Method == PaymentMethod.Card)
+        {
+            
+
+            
+            card.Balance -= order.TotalPrice;
+            await _cardRepo.UpdateAsync(card);
+
+            payment = new Payment
+            {
+                Amount = order.TotalPrice,
+                Method = dto.Method,
+                OrderId = dto.OrderId,
+                Status = PaymentStatus.Paid,
+                PaidAt = DateTime.UtcNow,
+                CardId = card.CardId,
+            };
+
+            await _paymentRepository.AddAsync(payment);
+
+            order.Status = OrderStatus.Processing;
+            await _orderRepo.UpdateAsync(order);
+
+            return MapToDto(payment, userId);
+        }
+
+        payment = new Payment
+        {
+            Amount = order.TotalPrice,
             Method = dto.Method,
             OrderId = dto.OrderId,
-            Status = PaymentStatus.Paid,
-            PaidAt = DateTime.UtcNow
+            Status = PaymentStatus.CashPay,
+            PaidAt = DateTime.UtcNow,
         };
 
         await _paymentRepository.AddAsync(payment);
+
+        order.Status = OrderStatus.Processing;
+        await _orderRepo.UpdateAsync(order);
 
         return MapToDto(payment, userId);
     }
@@ -75,7 +142,13 @@ public class PaymentService : IPaymentService
             Method = payment.Method,
             Status = payment.Status,
             OrderId = payment.OrderId,
-            UserId = userId
+            UserId = userId,
+            CardId = payment.CardId
         };
+    }
+
+    public async Task<decimal> TopUpCardAsync(Guid cardNumber, long amount)
+    {
+        return await _cardRepo.TopUpCardAsync(cardNumber, amount);
     }
 }

@@ -40,6 +40,29 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
                     b.ToTable("Brands");
                 });
 
+            modelBuilder.Entity("StylePoint.Domain.Entities.Card", b =>
+                {
+                    b.Property<long>("CardId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("CardId"));
+
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CardNumber")
+                        .HasMaxLength(16)
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("CardId");
+
+                    b.ToTable("Cards");
+                });
+
             modelBuilder.Entity("StylePoint.Domain.Entities.CartItem", b =>
                 {
                     b.Property<long>("Id")
@@ -226,6 +249,9 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<long?>("CardId")
+                        .HasColumnType("bigint");
+
                     b.Property<int>("Method")
                         .HasColumnType("int");
 
@@ -235,7 +261,12 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("PaidAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CardId");
 
                     b.HasIndex("OrderId");
 
@@ -383,10 +414,10 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("StylePoint.Domain.Entities.User", b =>
                 {
                     b.Property<long>("UserId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("UserId"));
+                    b.Property<long>("CardId")
+                        .HasColumnType("bigint");
 
                     b.Property<long?>("ConfirmerId")
                         .HasColumnType("bigint");
@@ -578,11 +609,17 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("StylePoint.Domain.Entities.Payment", b =>
                 {
+                    b.HasOne("StylePoint.Domain.Entities.Card", "Card")
+                        .WithMany("Payments")
+                        .HasForeignKey("CardId");
+
                     b.HasOne("StylePoint.Domain.Entities.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Card");
 
                     b.Navigation("Order");
                 });
@@ -660,6 +697,14 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("StylePoint.Domain.Entities.Card", "Card")
+                        .WithOne("User")
+                        .HasForeignKey("StylePoint.Domain.Entities.User", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+
                     b.Navigation("Confirmer");
 
                     b.Navigation("Role");
@@ -668,6 +713,14 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("StylePoint.Domain.Entities.Brand", b =>
                 {
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("StylePoint.Domain.Entities.Card", b =>
+                {
+                    b.Navigation("Payments");
+
+                    b.Navigation("User")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("StylePoint.Domain.Entities.Category", b =>

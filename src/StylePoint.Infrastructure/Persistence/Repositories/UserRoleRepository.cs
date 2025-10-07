@@ -11,7 +11,8 @@ public class UserRoleRepository(AppDbContext _context) : IRoleRepository
 
     public async Task<ICollection<User>> GetAllUsersByRoleAsync(string role)
     {
-        var foundRole = await _context.UserRoles.Include(u => u.Users).ThenInclude(u => u.Confirmer).FirstOrDefaultAsync(_ => _.Name == role);
+        var foundRole = await _context.UserRoles.Include(u => u.Users).ThenInclude(u => u.Confirmer)
+            .Include(x=>x.Users).ThenInclude(x=>x.Card).FirstOrDefaultAsync(_ => _.Name == role);
         if (foundRole is null)
         {
             throw new EntityNotFoundException(role);

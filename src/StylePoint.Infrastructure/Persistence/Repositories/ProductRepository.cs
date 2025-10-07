@@ -89,10 +89,11 @@ public class ProductRepository : IProductRepository
             .ToListAsync();
     }
 
-    public async Task AddAsync(Product product)
+    public async Task<long> AddAsync(Product product)
     {
         await _context.Products.AddAsync(product);
         await _context.SaveChangesAsync();
+        return product.Id;
     }
 
     public async Task UpdateAsync(Product product)

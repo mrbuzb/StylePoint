@@ -9,6 +9,10 @@ public class Payment
     public DateTime PaidAt { get; set; } = DateTime.UtcNow;
     public PaymentMethod Method { get; set; }
     public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
+
     public long OrderId { get; set; }
     public Order Order { get; set; } = null!;
+
+    public long? CardId { get; set; }
+    public Card? Card { get; set; }
 }

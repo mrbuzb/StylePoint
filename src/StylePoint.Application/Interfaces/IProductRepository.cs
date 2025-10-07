@@ -12,7 +12,7 @@ public interface IProductRepository
     Task<ICollection<Product>> GetByTagAsync(long tagId);
     Task<ICollection<Product>> GetBestSellersAsync();
     Task<ICollection<Product>> GetNewArrivalsAsync();
-    Task AddAsync(Product product);
+    Task<long> AddAsync(Product product);
     Task UpdateAsync(Product product);
     Task DeleteAsync(long id);
 }

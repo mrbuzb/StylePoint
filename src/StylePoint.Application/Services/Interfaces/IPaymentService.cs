@@ -5,6 +5,7 @@ namespace StylePoint.Application.Services.Interfaces;
 
 public interface IPaymentService
 {
+    Task<decimal> TopUpCardAsync(Guid cardNumber, long amount);
     Task<PaymentDto> ProcessPaymentAsync(long userId, PaymentCreateDto dto);
     Task<PaymentDto?> GetByIdAsync(long userId, long paymentId);
     Task<bool> RefundPaymentAsync(long userId, long paymentId);

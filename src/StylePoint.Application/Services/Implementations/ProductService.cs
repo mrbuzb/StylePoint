@@ -26,27 +26,30 @@ public class ProductService : IProductService
         return true;
     }
 
-    public async Task<ProductDto> AddProductAsync(ProductCreateDto dto)
+    public async Task<long> AddProductAsync(ProductCreateDto dto)
     {
         var product = new Product
         {
             Name = dto.Name,
             Description = dto.Description,
-            ImageUrl = await _cloud.UploadProfileImageAsync(dto.Image),
+            ImageUrl = dto.Image,
             CategoryId = dto.CategoryId,
             BrandId = dto.BrandId,
+            DiscountPrice = dto.DiscountPrice,
             Variants = dto.Variants.Select(v => new ProductVariant
             {
                 Size = v.Size,
                 Color = v.Color,
                 Stock = v.Stock,
                 Price = v.Price
+            }).ToList(),
+            ProductTags = dto.TagIds.Select(tagId => new ProductTag
+            {
+                TagId = tagId
             }).ToList()
         };
 
-        await _repo.AddAsync(product);
-
-        return MapToDto(product);
+        return await _repo.AddAsync(product);
     }
 
 
@@ -136,6 +139,7 @@ public class ProductService : IProductService
                 Stock = v.Stock,
                 Price = v.Price
             }).ToList(),
+
             Tags = product.ProductTags.Select(t => t.Tag.Name).ToList()
         };
     }

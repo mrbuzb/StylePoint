@@ -76,6 +76,7 @@ public class CartService : ICartService
             ProductVariantId = item.ProductVariantId,
             Quantity = item.Quantity,
             UnitPrice = item.UnitPrice,
+            UserId = item.UserId,
             TotalPrice = item.UnitPrice * item.Quantity
         }).ToList();
     }

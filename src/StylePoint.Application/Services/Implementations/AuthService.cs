@@ -72,16 +72,25 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
             LastName = payload.FamilyName,
             GoogleId = payload.Subject,
             ProfileImgUrl = payload.Picture,
-            RoleId = await _roleRepo.GetRoleIdAsync("User"),
+            RoleId = await _roleRepo.GetRoleIdAsync("User")
         };
 
         var userId = await _userRepo.AddUserAsync(user);
+
         var userEntity = await _userRepo.GetUserByIdAsync(userId);
+
         userEntity.Confirmer = new UserConfirme
         {
             UserId = userId,
             Email = payload.Email,
             IsConfirmed = payload.EmailVerified,
+        };
+
+        userEntity.Card = new Card
+        {
+            Balance = 0,
+            CardNumber = Guid.NewGuid(),
+            UserId = userId
         };
 
         await _userRepo.UpdateUserAsync(userEntity);
@@ -128,6 +137,14 @@ public class AuthService(IRoleRepository _roleRepo, IValidator<UserCreateDto> _v
             var foundUser = await _userRepo.GetUserByIdAsync(userId);
 
             foundUser.Confirmer!.UserId = userId;
+
+
+            foundUser.Card = new Card
+            {
+                Balance = 0,
+                CardNumber = Guid.NewGuid(),
+                UserId = userId
+            };
 
             await _userRepo.UpdateUserAsync(foundUser);
 

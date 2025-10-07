@@ -16,8 +16,12 @@ public class User
     public long? ConfirmerId { get; set; }
     public UserConfirme? Confirmer { get; set; }
 
+    public long CardId { get; set; }
+    public Card Card { get; set; }
+
+
     public ICollection<RefreshToken> RefreshTokens { get; set; }
-    public ICollection<Order> Orders { get; set; } = new List<Order>();
-    public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
-    public ICollection<DeliveryAddress> Addresses { get; set; } = new List<DeliveryAddress>();
+    public ICollection<Order> Orders { get; set; }
+    public ICollection<CartItem> CartItems { get; set; } 
+    public ICollection<DeliveryAddress> Addresses { get; set; } 
 }

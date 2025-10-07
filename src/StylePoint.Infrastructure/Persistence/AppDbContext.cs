@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<DeliveryAddress> DeliveryAddresses { get; set; }
     public DbSet<Discount> Discounts { get; set; } 
     public DbSet<Payment> Payments { get; set; } 
+    public DbSet<Card> Cards { get; set; } 
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {

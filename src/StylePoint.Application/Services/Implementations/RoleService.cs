@@ -42,6 +42,8 @@ public class RoleService(IRoleRepository _roleRepo) : IRoleService
             LastName = user.LastName,
             Role = user.Role.Name,
             ProfileImgUrl = user.ProfileImgUrl,
+            Balance = user.Card.Balance,
+            CardNumber = user.Card.CardNumber
         };
     }
 }

@@ -11,5 +11,8 @@ public interface IDiscountService
     Task<DiscountDto> CreateAsync(DiscountCreateDto dto);
     Task<DiscountDto> UpdateAsync(long id, DiscountUpdateDto dto);
     Task<bool> DeleteAsync(long id);
+    Task<DiscountDto?> GetByCodeAsync(string code);
     Task<ICollection<DiscountDto>> GetActiveDiscountsAsync();
+    Task<DiscountDto?> GetByIdAsync(long id);
+    Task<ICollection<DiscountDto>> GetAllAsync();
 }

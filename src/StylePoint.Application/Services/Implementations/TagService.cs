@@ -22,10 +22,9 @@ public class TagService : ITagService
         return MapToDto(tag);
     }
 
-    public async Task<bool> DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
         await _repo.DeleteAsync(id);
-        return true;
     }
 
     public async Task<ICollection<TagDto>> GetAllAsync()
@@ -50,6 +49,7 @@ public class TagService : ITagService
 
         return MapToDto(tag);
     }
+
 
     private static TagDto MapToDto(Tag t) =>
         new TagDto
