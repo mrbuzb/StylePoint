@@ -36,6 +36,7 @@ public class ProductService : IProductService
             CategoryId = dto.CategoryId,
             BrandId = dto.BrandId,
             DiscountPrice = dto.DiscountPrice,
+            Price = dto.Price,
             Variants = dto.Variants.Select(v => new ProductVariant
             {
                 Size = v.Size,

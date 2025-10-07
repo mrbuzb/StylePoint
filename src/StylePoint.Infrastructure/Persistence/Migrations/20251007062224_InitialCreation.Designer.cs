@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace StylePoint.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251007025347_InitialCreation")]
+    [Migration("20251007062224_InitialCreation")]
     partial class InitialCreation
     {
         /// <inheritdoc />
@@ -62,6 +62,9 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("CardId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("Cards");
                 });
@@ -417,10 +420,10 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("StylePoint.Domain.Entities.User", b =>
                 {
                     b.Property<long>("UserId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    b.Property<long>("CardId")
-                        .HasColumnType("bigint");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("UserId"));
 
                     b.Property<long?>("ConfirmerId")
                         .HasColumnType("bigint");
@@ -451,6 +454,9 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
                     b.Property<string>("Salt")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("TelegramId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("UserId");
 
@@ -541,6 +547,17 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
                             Description = ".",
                             Name = "User"
                         });
+                });
+
+            modelBuilder.Entity("StylePoint.Domain.Entities.Card", b =>
+                {
+                    b.HasOne("StylePoint.Domain.Entities.User", "User")
+                        .WithOne("Card")
+                        .HasForeignKey("StylePoint.Domain.Entities.Card", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("StylePoint.Domain.Entities.CartItem", b =>
@@ -692,21 +709,13 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
                     b.HasOne("StylePoint.Domain.Entities.UserConfirme", "Confirmer")
                         .WithOne("User")
                         .HasForeignKey("StylePoint.Domain.Entities.User", "ConfirmerId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("StylePoint.Domain.Entities.UserRole", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("StylePoint.Domain.Entities.Card", "Card")
-                        .WithOne("User")
-                        .HasForeignKey("StylePoint.Domain.Entities.User", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Card");
 
                     b.Navigation("Confirmer");
 
@@ -721,9 +730,6 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("StylePoint.Domain.Entities.Card", b =>
                 {
                     b.Navigation("Payments");
-
-                    b.Navigation("User")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("StylePoint.Domain.Entities.Category", b =>
@@ -751,6 +757,8 @@ namespace StylePoint.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("StylePoint.Domain.Entities.User", b =>
                 {
                     b.Navigation("Addresses");
+
+                    b.Navigation("Card");
 
                     b.Navigation("CartItems");
 

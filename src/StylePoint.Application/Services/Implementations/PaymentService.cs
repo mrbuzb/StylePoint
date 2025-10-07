@@ -13,14 +13,95 @@ public class PaymentService : IPaymentService
     private readonly IProductVariantRepository _productVariantRepo;
     private readonly IOrderRepository _orderRepo;
     private readonly ICardRepository _cardRepo;
-    public PaymentService(IPaymentRepository paymentRepository, IProductVariantRepository productVariantRepo, IOrderRepository orderRepo, ICardRepository cardRepo)
+    private readonly IUserRepository _userRepo;
+    public PaymentService(IPaymentRepository paymentRepository, IProductVariantRepository productVariantRepo, IOrderRepository orderRepo, ICardRepository cardRepo, IUserRepository userRepo)
     {
         _paymentRepository = paymentRepository;
         _productVariantRepo = productVariantRepo;
         _orderRepo = orderRepo;
         _cardRepo = cardRepo;
+        _userRepo = userRepo;
     }
 
+    public async Task<PaymentDto> ProcessTelegramPaymentAsync(long telegramId, PaymentCreateDto dto)
+    {
+        // Telegram userni topish
+        var user = await _userRepo.GetWithOrdersAndCardByTelegramIdAsync(telegramId);
+
+        if (user == null)
+            throw new InvalidOperationException("Telegram user not found.");
+
+        var order = user.Orders.FirstOrDefault(o => o.Id == dto.OrderId);
+
+        if (order == null)
+            throw new InvalidOperationException("Order not found for this user.");
+
+        if (order.Status != OrderStatus.Pending)
+            throw new InvalidOperationException("Order already processed.");
+
+        if (dto.Method == PaymentMethod.Card)
+        {
+            var card = user.Card;
+            if (card == null)
+                throw new NotAllowedException("Card not found for this user.");
+
+            if (card.Balance < order.TotalPrice)
+                throw new NotAllowedException("Card balance is insufficient");
+        }
+
+        foreach (var item in order.OrderItems)
+        {
+            var variant = await _productVariantRepo.GetByIdAsync(item.ProductVariantId);
+            if (variant == null)
+                throw new InvalidOperationException("Product variant not found.");
+
+            if (item.Quantity > variant.Stock)
+                throw new InvalidOperationException(
+                    $"'{variant.Size}' uchun yetarli stock mavjud emas. Qolgan: {variant.Stock}");
+
+            variant.Stock -= item.Quantity;
+            await _productVariantRepo.UpdateAsync(variant);
+        }
+
+        var payment = new Payment();
+
+        if (dto.Method == PaymentMethod.Card)
+        {
+            var card = user.Card!;
+            card.Balance -= order.TotalPrice;
+            await _cardRepo.UpdateAsync(card);
+
+            payment = new Payment
+            {
+                Amount = order.TotalPrice,
+                Method = dto.Method,
+                OrderId = dto.OrderId,
+                Status = PaymentStatus.Paid,
+                PaidAt = DateTime.UtcNow,
+                CardId = card.CardId,
+            };
+
+            await _paymentRepository.AddAsync(payment);
+        }
+        else
+        {
+            payment = new Payment
+            {
+                Amount = order.TotalPrice,
+                Method = dto.Method,
+                OrderId = dto.OrderId,
+                Status = PaymentStatus.CashPay,
+                PaidAt = DateTime.UtcNow,
+            };
+
+            await _paymentRepository.AddAsync(payment);
+        }
+
+        order.Status = OrderStatus.Processing;
+        await _orderRepo.UpdateAsync(order);
+
+        return MapToDto(payment, user.UserId);
+    }
 
     public async Task<PaymentDto> ProcessPaymentAsync(long userId, PaymentCreateDto dto)
     {

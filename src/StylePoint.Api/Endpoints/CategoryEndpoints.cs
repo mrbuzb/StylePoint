@@ -11,7 +11,6 @@ public static class CategoryEndpoints
         var categoryGroup = app.MapGroup("/api/categories")
                                .WithTags("CategoryManagement").RequireAuthorization();
 
-        // Get all categories
         categoryGroup.MapGet("/",
         async (ICategoryService categoryService) =>
         {
@@ -20,7 +19,6 @@ public static class CategoryEndpoints
         })
         .WithName("GetAllCategories");
 
-        // Get category by id
         categoryGroup.MapGet("/{id:long}",
         async (long id, ICategoryService categoryService) =>
         {

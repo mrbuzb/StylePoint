@@ -87,4 +87,14 @@ public class UserRepository(AppDbContext _context) : IUserRepository
     {
         return await _context.Users.Include(x => x.Confirmer).FirstOrDefaultAsync(x => x.GoogleId == googleId);
     }
+
+    public async Task<User?> GetWithOrdersAndCardByTelegramIdAsync(long telegramId)
+    {
+        return await _context.Users
+                             .Include(u => u.Card)
+                             .Include(u => u.Orders)
+                                 .ThenInclude(o => o.OrderItems)
+                             .FirstOrDefaultAsync(u => u.TelegramId == telegramId);
+    }
+
 }

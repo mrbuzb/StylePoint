@@ -12,9 +12,8 @@ public static class CartEndpoints
     {
         var cartGroup = app.MapGroup("/api/cart")
                            .WithTags("CartManagement")
-                           .RequireAuthorization(); // Faqat login bo‘lganlarga
+                           .RequireAuthorization(); 
 
-        // Get user cart
         cartGroup.MapGet("/", async (HttpContext httpContext, ICartService cartService) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -23,7 +22,6 @@ public static class CartEndpoints
         })
         .WithName("GetUserCart");
 
-        // Add item to cart
         cartGroup.MapPost("/", async (HttpContext httpContext, [FromBody] CartItemCreateDto dto, ICartService cartService) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -32,7 +30,6 @@ public static class CartEndpoints
         })
         .WithName("AddToCart");
 
-        // Update quantity
         cartGroup.MapPatch("/{cartItemId:long}/quantity", async (HttpContext httpContext, long cartItemId, [FromBody] int quantity, ICartService cartService) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -41,7 +38,6 @@ public static class CartEndpoints
         })
         .WithName("UpdateCartQuantity");
 
-        // Remove item
         cartGroup.MapDelete("/{cartItemId:long}", async (HttpContext httpContext, long cartItemId, ICartService cartService) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -50,7 +46,6 @@ public static class CartEndpoints
         })
         .WithName("RemoveFromCart");
 
-        // Clear cart
         cartGroup.MapDelete("/clear", async (HttpContext httpContext, ICartService cartService) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -59,7 +54,6 @@ public static class CartEndpoints
         })
         .WithName("ClearCart");
 
-        // Get subtotal
         cartGroup.MapGet("/subtotal", async (HttpContext httpContext, ICartService cartService) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);

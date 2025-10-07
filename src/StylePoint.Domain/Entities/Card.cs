@@ -10,5 +10,6 @@ public class Card
     public long UserId { get; set; }
     public User User { get; set; }
 
+
     public ICollection<Payment> Payments { get; set; }
 }

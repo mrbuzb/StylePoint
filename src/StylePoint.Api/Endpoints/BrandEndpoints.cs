@@ -12,7 +12,6 @@ public static class BrandEndpoints
         var brandGroup = app.MapGroup("/api/brands")
                             .WithTags("BrandManagement").RequireAuthorization();
 
-        // Get all brands
         brandGroup.MapGet("/",
         async (IBrandService brandService) =>
         {
@@ -21,7 +20,6 @@ public static class BrandEndpoints
         })
         .WithName("GetAllBrands");
 
-        // Get brand by id
         brandGroup.MapGet("/{id:long}",
         async (long id, IBrandService brandService) =>
         {
@@ -29,8 +27,5 @@ public static class BrandEndpoints
             return brand is not null ? Results.Ok(brand) : Results.NotFound();
         })
         .WithName("GetBrandById");
-
-        // Create brand
-        
     }
 }

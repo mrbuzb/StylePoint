@@ -15,14 +15,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.FirstName).HasMaxLength(100).IsRequired();
         builder.Property(u => u.LastName).HasMaxLength(100).IsRequired();
-        builder.Property(u => u.Password).IsRequired();
-        builder.Property(u => u.Salt).IsRequired();
+        builder.Property(u => u.Password).IsRequired(false);
+        builder.Property(u => u.Salt).IsRequired(false);
         builder.Property(u => u.ConfirmerId).IsRequired(false);
 
         builder.HasOne(u => u.Confirmer)
-            .WithOne(c => c.User)
-            .HasForeignKey<User>(u => u.ConfirmerId)
-            .OnDelete(DeleteBehavior.Cascade);
+               .WithOne(c => c.User)
+               .HasForeignKey<User>(u => u.ConfirmerId)
+               .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(u => u.Role)
                .WithMany(r => r.Users)
@@ -33,9 +33,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .WithOne(o => o.User)
                .HasForeignKey(o => o.UserId);
 
-        builder.HasOne(x => x.Card)
-               .WithOne(o => o.User)
-               .HasForeignKey<User>(o => o.UserId);
+
+        builder
+        .HasOne(u => u.Card)
+        .WithOne(c => c.User)
+        .HasForeignKey<Card>(c => c.UserId);
 
         builder.HasMany(x => x.CartItems)
                .WithOne(c => c.User)

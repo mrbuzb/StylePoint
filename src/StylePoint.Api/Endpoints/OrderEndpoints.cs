@@ -13,7 +13,6 @@ public static class OrderEndpoints
     {
         var group = app.MapGroup("/api/orders").WithTags("Orders").RequireAuthorization();
 
-        // 🟢 Place order
         group.MapPost("/", async (HttpContext httpContext, OrderCreateDto dto, IOrderService service) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -22,7 +21,6 @@ public static class OrderEndpoints
         })
         .WithName("PlaceOrder");
 
-        // 🟢 Get order by ID
         group.MapGet("/{orderId:long}", async (HttpContext httpContext, long orderId, IOrderService service) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -31,7 +29,6 @@ public static class OrderEndpoints
         })
         .WithName("GetOrderById");
 
-        // 🟢 Get all orders of user
         group.MapGet("/", async (HttpContext httpContext, IOrderService service) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -40,7 +37,6 @@ public static class OrderEndpoints
         })
         .WithName("GetUserOrders");
 
-        // 🟢 Cancel order
         group.MapDelete("/{orderId:long}", async (HttpContext httpContext, long orderId, IOrderService service) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);

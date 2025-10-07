@@ -22,7 +22,6 @@ public static class AdminEndpoints
         .WithName("AddProduct")
         .DisableAntiforgery();
 
-        // 🟢 Update product
         adminGroup.MapPut("/product{id:long}", async (long id, ProductUpdateDto dto, IProductService service) =>
         {
             var product = await service.UpdateProductAsync(id, dto);
@@ -36,7 +35,6 @@ public static class AdminEndpoints
         })
         .WithName("TopUpCard");
 
-        // 🟢 Delete product
         adminGroup.MapDelete("product/{id:long}", async (long id, IProductService service) =>
         {
             var deleted = await service.DeleteProductAsync(id);
@@ -45,7 +43,6 @@ public static class AdminEndpoints
         .WithName("DeleteProduct");
 
 
-        // 🔹 Role management
         adminGroup.MapGet("/roles",
             async (IRoleService _roleService) =>
             {
@@ -80,7 +77,6 @@ public static class AdminEndpoints
             })
             .WithName("UpdateUserRole");
 
-        // 🔹 Brand management
         var brandGroup = adminGroup.MapGroup("/brands");
         brandGroup.MapPost("/", async ([FromBody] string name, IBrandService service) =>
         {
@@ -107,7 +103,6 @@ public static class AdminEndpoints
             return deleted ? Results.Ok(new { success = true }) : Results.NotFound();
         }).WithName("DeleteBrand");
 
-        // 🔹 Category management
         var categoryGroup = adminGroup.MapGroup("/categories");
         categoryGroup.MapPost("/", async ([FromBody] string name, ICategoryService service) =>
         {
@@ -134,7 +129,6 @@ public static class AdminEndpoints
             return deleted ? Results.Ok(new { success = true }) : Results.NotFound();
         }).WithName("DeleteCategory");
 
-        // 🔹 Discount management
         var discountGroup = adminGroup.MapGroup("/discounts");
         discountGroup.MapGet("/", async (IDiscountService service) =>
         {
@@ -173,7 +167,6 @@ public static class AdminEndpoints
             return deleted ? Results.Ok(new { success = true }) : Results.NotFound();
         }).WithName("DeleteDiscount");
 
-        // 🔹 Tag management
         var tagGroup = adminGroup.MapGroup("/tags");
         tagGroup.MapPost("/", async (string name, ITagService service) =>
         {

@@ -2,7 +2,7 @@
 
 namespace StylePoint.Application.Services.Interfaces;
 
-public interface IBrandService
+public interface IBrandService  
 {
     Task<ICollection<BrandDto>> GetAllAsync();
     Task<BrandDto?> GetByIdAsync(long id);

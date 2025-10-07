@@ -22,7 +22,7 @@ public class CardRepository(AppDbContext _context) : ICardRepository
 
     public async Task<Card?> GetByIdAsync(long id)
     {
-        return await _context.Cards.FindAsync(id);
+        return await _context.Cards.FirstOrDefaultAsync(x=>x.UserId == id);
     }
 
     public async Task<Card?> GetByNumberAsync(Guid cardNumber)

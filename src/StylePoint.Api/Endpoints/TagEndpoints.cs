@@ -12,7 +12,6 @@ public static class TagEndpoints
         var group = app.MapGroup("/api/tags")
             .WithTags("Tags").RequireAuthorization();
 
-        // 🔹 Get all tags
         group.MapGet("/", async (ITagService service) =>
         {
             var tags = await service.GetAllAsync();
@@ -20,15 +19,12 @@ public static class TagEndpoints
         })
         .WithName("GetAllTags");
 
-        // 🔹 Get tag by Id
         group.MapGet("/{id:long}", async (long id, ITagService service) =>
         {
             var tag = await service.GetByIdAsync(id);
             return tag is null ? Results.NotFound() : Results.Ok(tag);
         })
         .WithName("GetTagById");
-
-        
 
         return app;
     }

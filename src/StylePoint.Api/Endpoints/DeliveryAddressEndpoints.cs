@@ -12,9 +12,8 @@ public static class DeliveryAddressEndpoints
     {
         var addressGroup = app.MapGroup("/api/addresses")
                               .WithTags("DeliveryAddressManagement")
-                              .RequireAuthorization(); // faqat login bo‘lganlarga
+                              .RequireAuthorization();
 
-        // Get all user addresses
         addressGroup.MapGet("/", async (HttpContext httpContext, IDeliveryAddressService service) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -23,7 +22,6 @@ public static class DeliveryAddressEndpoints
         })
         .WithName("GetUserAddresses");
 
-        // Add new address
         addressGroup.MapPost("/", async (HttpContext httpContext, [FromBody] DeliveryAddressCreateDto dto, IDeliveryAddressService service) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -32,7 +30,6 @@ public static class DeliveryAddressEndpoints
         })
         .WithName("AddAddress");
 
-        // Update address
         addressGroup.MapPut("/", async (HttpContext httpContext, [FromBody] DeliveryAddressUpdateDto dto, IDeliveryAddressService service) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
@@ -41,7 +38,6 @@ public static class DeliveryAddressEndpoints
         })
         .WithName("UpdateAddress");
 
-        // Delete address
         addressGroup.MapDelete("/{addressId:long}", async (HttpContext httpContext, long addressId, IDeliveryAddressService service) =>
         {
             var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);

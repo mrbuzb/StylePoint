@@ -9,6 +9,7 @@ public interface IUserRepository
     Task<User> GetUserByIdAsync(long id);
     Task UpdateUserAsync(User user);
     Task<User> GetUserByEmailAsync(string email);
+    Task<User?> GetWithOrdersAndCardByTelegramIdAsync(long telegramId);
     //Task<User> GetUserByUserNameAsync(string userName);
     Task UpdateUserRoleAsync(long userId, string userRole);
     Task DeleteUserByIdAsync(long userId);

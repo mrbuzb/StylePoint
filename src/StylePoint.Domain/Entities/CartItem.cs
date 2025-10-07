@@ -8,6 +8,7 @@ public class CartItem
 
     public long UserId { get; set; }
     public User User { get; set; } = null!;
+
     public long ProductVariantId { get; set; }
     public ProductVariant ProductVariant { get; set; } = null!;
 }

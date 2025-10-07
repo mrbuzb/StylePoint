@@ -14,5 +14,7 @@ public class CardConfiguration : IEntityTypeConfiguration<Card>
         builder.HasMany(x => x.Payments)
             .WithOne(x => x.Card)
             .HasForeignKey(x=>x.CardId);
+
+        
     }
 }

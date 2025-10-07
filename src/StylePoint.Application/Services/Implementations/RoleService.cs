@@ -36,8 +36,9 @@ public class RoleService(IRoleRepository _roleRepo) : IRoleService
     {
         return new UserGetDto
         {
-            Email = user.Confirmer!.Email,
-            UserId = user.UserId,
+            //Email = user.Confirmer!.Email ?? "Anon",
+            TelegramId = user.TelegramId ?? 0,
+            UserId = user.UserId ,
             FirstName = user.FirstName,
             LastName = user.LastName,
             Role = user.Role.Name,

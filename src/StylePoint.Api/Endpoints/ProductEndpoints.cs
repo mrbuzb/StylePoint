@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using StylePoint.Application.Dtos;
-using StylePoint.Application.Services.Interfaces;
+﻿using StylePoint.Application.Services.Interfaces;
 
 namespace StylePoint.Api.Endpoints;
 
@@ -12,10 +8,6 @@ public static class ProductEndpoints
     {
         var group = app.MapGroup("/api/products").WithTags("Products").RequireAuthorization();
 
-        // 🟢 Create product
-        
-
-        // 🟢 Get all
         group.MapGet("/", async (IProductService service) =>
         {
             var products = await service.GetAllAsync();
@@ -23,7 +15,6 @@ public static class ProductEndpoints
         })
         .WithName("GetAllProducts");
 
-        // 🟢 Get by id
         group.MapGet("/{id:long}", async (long id, IProductService service) =>
         {
             var product = await service.GetByIdAsync(id);
@@ -31,7 +22,6 @@ public static class ProductEndpoints
         })
         .WithName("GetProductById");
 
-        // 🟢 Get by category
         group.MapGet("/category/{categoryId:long}", async (long categoryId, IProductService service) =>
         {
             var products = await service.GetByCategoryAsync(categoryId);
@@ -39,7 +29,6 @@ public static class ProductEndpoints
         })
         .WithName("GetProductsByCategory");
 
-        // 🟢 Get by brand
         group.MapGet("/brand/{brandId:long}", async (long brandId, IProductService service) =>
         {
             var products = await service.GetByBrandAsync(brandId);
@@ -47,7 +36,6 @@ public static class ProductEndpoints
         })
         .WithName("GetProductsByBrand");
 
-        // 🟢 Get by tag
         group.MapGet("/tag/{tagId:long}", async (long tagId, IProductService service) =>
         {
             var products = await service.GetByTagAsync(tagId);
@@ -55,7 +43,6 @@ public static class ProductEndpoints
         })
         .WithName("GetProductsByTag");
 
-        // 🟢 Get best sellers
         group.MapGet("/best-sellers", async (IProductService service) =>
         {
             var products = await service.GetBestSellersAsync();
@@ -63,7 +50,6 @@ public static class ProductEndpoints
         })
         .WithName("GetBestSellers");
 
-        // 🟢 Get new arrivals
         group.MapGet("/new-arrivals", async (IProductService service) =>
         {
             var products = await service.GetNewArrivalsAsync();
@@ -71,7 +57,6 @@ public static class ProductEndpoints
         })
         .WithName("GetNewArrivals");
 
-        // 🟢 Search
         group.MapGet("/search", async (string keyword, IProductService service) =>
         {
             var products = await service.SearchAsync(keyword);

@@ -11,6 +11,7 @@ public class Order
 
     public long UserId { get; set; }
     public User User { get; set; } = null!;
+
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public long? AddressId { get; set; }
