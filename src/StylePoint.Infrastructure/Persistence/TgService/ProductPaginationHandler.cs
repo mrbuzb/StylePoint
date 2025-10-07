@@ -209,6 +209,7 @@ public class ProductPaginationHandler
             int variantId = int.Parse(query.Data.Replace("addcartvariant_", ""));
             await HandleAddVariantToCartAsync(query.Message.Chat.Id, variantId);
         }
+        
 
     }
 
@@ -234,9 +235,10 @@ public class ProductPaginationHandler
         };
 
         var text = $"🛍 <b>{variant.Product.Name}</b>\n" +
-                   $"Rang: {variant.Color}\n" +
-                   $"O‘lcham: {variant.Size}\n" +
+                   $"🔳 Rang: {variant.Color}\n" +
+                   $"📏 O‘lcham: {variant.Size}\n" +
                    $"💰 Narx: {variant.Price} so‘m\n\n" +
+                   $"🧮 Zaxira: {variant.Stock}\n\n" +
                    $"Savatga qo‘shmoqchimisiz?";
 
         await _botClient.SendTextMessageAsync(

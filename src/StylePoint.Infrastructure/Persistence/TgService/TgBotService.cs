@@ -126,6 +126,17 @@ public class TgBotService : BackgroundService
                     }
                 }
             }
+             if (query.Data == "cancel")
+            {
+                if (query.Message != null)
+                {
+                    await _botClient.EditMessageTextAsync(
+                        chatId: query.Message.Chat.Id,
+                        messageId: query.Message.MessageId,
+                        text: "❌ Amal bekor qilindi."
+                    );
+                }
+            }
 
             if (query.Data.StartsWith("payOrderCard_") || query.Data.StartsWith("payOrderCash_"))
             {
@@ -226,7 +237,7 @@ public class TgBotService : BackgroundService
         else if (text.Equals("❓ Yordam"))
         {
             await _botClient.SendTextMessageAsync(chatId,
-                "Buyruqlar:\n/start - boshlash\n/help - yordam\n/products - mahsulotlar ro‘yxati");
+                "Admin : @dotned");
         }
         else if (text.Equals("📦 Mahsulotlar"))
         {
@@ -250,11 +261,14 @@ public class TgBotService : BackgroundService
                 var message2 = new StringBuilder("📦 Sizning buyurtmalaringiz:\n\n");
                 foreach (var order in orders)
                 {
-                    message2.AppendLine($"ID: {order.Id}");
-                    message2.AppendLine($"Status: {order.Status}");
-                    message2.AppendLine($"Umumiy summa: {order.TotalPrice:C}");
-                    message2.AppendLine($"Sana: {order.CreatedAt:dd.MM.yyyy}");
-                    message2.AppendLine("---------------------------");
+                    if(order.Status != OrderStatus.Completed)
+                    {
+                        message2.AppendLine($"ID: {order.Id}");
+                        message2.AppendLine($"Status: {order.Status}");
+                        message2.AppendLine($"Umumiy summa: {order.TotalPrice:C}");
+                        message2.AppendLine($"Sana: {order.CreatedAt:dd.MM.yyyy}");
+                        message2.AppendLine("---------------------------");
+                    }
                 }
 
                 await _botClient.SendTextMessageAsync(chatId, message2.ToString());
@@ -284,7 +298,7 @@ public class TgBotService : BackgroundService
                     message2.AppendLine("---------------------------");
                 }
 
-                await _botClient.SendTextMessageAsync(chatId, message.ToString());
+                await _botClient.SendTextMessageAsync(chatId, message2.ToString());
             }
         }
 
@@ -402,7 +416,7 @@ public class TgBotService : BackgroundService
                 var messageText = new StringBuilder();
                 messageText.AppendLine($"📦 Mahsulot: {variant.Product.Name}");
                 messageText.AppendLine($"🔹 Variant: {variant.Color}");
-                messageText.AppendLine($"💰 Narxi: {variant.Price} so‘m");
+                messageText.AppendLine($"💰 Umumiy Narxi: {variant.Price*item.Quantity} so‘m");
                 messageText.AppendLine($"🔢 Miqdor: {item.Quantity}");
 
                 await _botClient.SendTextMessageAsync(

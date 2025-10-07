@@ -97,7 +97,7 @@ public class PaymentService : IPaymentService
             await _paymentRepository.AddAsync(payment);
         }
 
-        order.Status = OrderStatus.Processing;
+        order.Status = OrderStatus.Completed;
         await _orderRepo.UpdateAsync(order);
 
         return MapToDto(payment, user.UserId);
@@ -157,7 +157,7 @@ public class PaymentService : IPaymentService
 
             await _paymentRepository.AddAsync(payment);
 
-            order.Status = OrderStatus.Processing;
+            order.Status = OrderStatus.Completed;
             await _orderRepo.UpdateAsync(order);
 
             return MapToDto(payment, userId);
