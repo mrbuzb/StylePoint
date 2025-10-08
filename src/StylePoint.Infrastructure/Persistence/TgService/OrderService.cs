@@ -2,10 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using StylePoint.Domain.Entities;
 using StylePoint.Domain.Enums;
-using StylePoint.Application.Dtos;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
-using Telegram.Bot.Types.Enums;
 
 namespace StylePoint.Infrastructure.Persistence.TgService;
 
@@ -125,7 +123,7 @@ public class OrderService
         _context.CartItems.RemoveRange(user.CartItems); // Savatni tozalaymiz
         await _context.SaveChangesAsync();
 
-        await _botClient.SendTextMessageAsync(chatId, $"✅ Buyurtma yaratildi! Umumiy summa: {order.TotalPrice} so‘m");
+        await _botClient.SendTextMessageAsync(chatId, $"✅ Buyurtma yaratildi! Umumiy summa: {order.TotalPrice} $");
     }
 
     // 3️⃣ Callback querylarni ishlash

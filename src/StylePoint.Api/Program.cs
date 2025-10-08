@@ -37,9 +37,8 @@ builder.Services.AddCors(options =>
 var botToken = builder.Configuration["TelegramBot:Token"];
 if (string.IsNullOrEmpty(botToken))
     throw new InvalidOperationException("? Telegram bot token topilmadi!");
-
 builder.Services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(botToken));
-
+builder.Services.AddSingleton<ProductBotService>();
 builder.Services.AddHostedService<TgBotService>();
 
 ServiceCollectionExtensions.AddSwaggerWithJwt(builder.Services);

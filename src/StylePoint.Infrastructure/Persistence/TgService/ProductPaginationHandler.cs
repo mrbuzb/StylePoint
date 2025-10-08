@@ -97,8 +97,8 @@ public class ProductPaginationHandler
         var captionBuilder = new StringBuilder();
         captionBuilder.AppendLine($"<b>{product.Name}</b>");
         captionBuilder.AppendLine(product.DiscountPrice.HasValue
-            ? $"💰 <b>{product.DiscountPrice} so‘m</b> (avval {product.Price} so‘m)"
-            : $"💰 <b>{product.Price} so‘m</b>");
+            ? $"💰 <b>{product.DiscountPrice} $</b> (avval {product.Price} $)"
+            : $"💰 <b>{product.Price} $</b>");
         if (!string.IsNullOrEmpty(product.Description))
             captionBuilder.AppendLine($"\n{product.Description}");
 
@@ -111,7 +111,7 @@ public class ProductPaginationHandler
             {
                 buttons.Add(new[]
                 {
-                    InlineKeyboardButton.WithCallbackData($"{v.Color} | {v.Size} ({v.Price} so‘m)", $"variant_{v.Id}")
+                    InlineKeyboardButton.WithCallbackData($"{v.Color} | {v.Size} ({v.Price} $)", $"variant_{v.Id}")
                 });
             }
         }
@@ -209,6 +209,11 @@ public class ProductPaginationHandler
             int variantId = int.Parse(query.Data.Replace("addcartvariant_", ""));
             await HandleAddVariantToCartAsync(query.Message.Chat.Id, variantId);
         }
+        else if (query.Data.StartsWith("addcart_"))
+        {
+            int variantId = int.Parse(query.Data.Replace("addcart_", ""));
+            await HandleAddVariantToCartAsync(query.Message.Chat.Id, variantId);
+        }
         
 
     }
@@ -237,7 +242,7 @@ public class ProductPaginationHandler
         var text = $"🛍 <b>{variant.Product.Name}</b>\n" +
                    $"🔳 Rang: {variant.Color}\n" +
                    $"📏 O‘lcham: {variant.Size}\n" +
-                   $"💰 Narx: {variant.Price} so‘m\n\n" +
+                   $"💰 Narx: {variant.Price} $\n\n" +
                    $"🧮 Zaxira: {variant.Stock}\n\n" +
                    $"Savatga qo‘shmoqchimisiz?";
 
