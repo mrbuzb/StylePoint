@@ -21,7 +21,6 @@ public class ProductPaginationHandler
     }
     private async Task HandleAddVariantToCartAsync(long chatId, int variantId)
     {
-        // Telegram chatId orqali userni topamiz
         var user = await _context.Users.FirstOrDefaultAsync(u => u.TelegramId == chatId);
         if (user == null)
         {
@@ -39,7 +38,6 @@ public class ProductPaginationHandler
             return;
         }
 
-        // Agar userda allaqachon shu variant bo'lsa, quantityni oshiramiz
         var existingItem = await _context.CartItems
             .FirstOrDefaultAsync(ci => ci.UserId == user.UserId && ci.ProductVariantId == variantId);
 
@@ -78,7 +76,7 @@ public class ProductPaginationHandler
             return;
         }
 
-        var totalPages = (int)Math.Ceiling(totalCount / 1.0); // har safar 1 ta product
+        var totalPages = (int)Math.Ceiling(totalCount / 1.0); 
         page = Math.Max(1, Math.Min(page, totalPages));
 
         var product = await _context.Products
@@ -123,7 +121,6 @@ public class ProductPaginationHandler
             });
         }
 
-        // Navigatsiya tugmalari
         var navRow = new List<InlineKeyboardButton>();
         if (page > 1)
             navRow.Add(InlineKeyboardButton.WithCallbackData("⬅️ Oldingi", $"page_{page - 1}"));
@@ -133,7 +130,6 @@ public class ProductPaginationHandler
 
         var replyMarkup = new InlineKeyboardMarkup(buttons);
 
-        // Eski xabarni yangilaymiz yoki yangisini yuboramiz
         try
         {
             if (messageId.HasValue)

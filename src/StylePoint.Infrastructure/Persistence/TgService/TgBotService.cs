@@ -6,7 +6,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StylePoint.Application.Dtos;
 using StylePoint.Application.Interfaces;
-using StylePoint.Application.Services.Implementations;
 using StylePoint.Application.Services.Interfaces;
 using StylePoint.Domain.Entities;
 using StylePoint.Domain.Enums;
@@ -35,7 +34,7 @@ public class TgBotService : BackgroundService
         _botClient = new TelegramBotClient(token);
 
         _addressHandler = new AddressHandler(_botClient, _scopeFactory);
-        _productBotService =new ProductBotService(_botClient,_scopeFactory);
+        _productBotService = new ProductBotService(_botClient, _scopeFactory);
     }
 
 
@@ -85,12 +84,10 @@ public class TgBotService : BackgroundService
             {
                 await paginationHandler.HandleCallbackQueryAsync(query);
             }
-            // ProductBotService callbacklari (filter, filteritem)
             else if (query.Data.StartsWith("filter_") || query.Data.StartsWith("filteritem_"))
             {
                 await _productBotService.HandleCallbackQueryAsync(query);
             }
-            // Address tugmalari
             else if (query.Data.StartsWith("myAddresses")
                      || query.Data.StartsWith("pageAddr_")
                      || query.Data.StartsWith("createAddress"))
@@ -102,7 +99,6 @@ public class TgBotService : BackgroundService
                 var orderService = new OrderService(_botClient, context);
                 await orderService.HandleCallbackQueryAsync(query);
             }
-            // Savatdan o‘chirish
             if (query.Data.StartsWith("removeCartItem_"))
             {
                 var idStr = query.Data.Split("_")[1];
@@ -126,7 +122,6 @@ public class TgBotService : BackgroundService
                     }
                 }
             }
-            // Bekor qilish
             if (query.Data == "cancel")
             {
                 if (query.Message != null)
@@ -138,14 +133,13 @@ public class TgBotService : BackgroundService
                     );
                 }
             }
-            if(query.Data.StartsWith("categoryFilter") ||
-                query.Data.StartsWith("tagFilter")||
+            if (query.Data.StartsWith("categoryFilter") ||
+                query.Data.StartsWith("tagFilter") ||
                 query.Data.StartsWith("brandFilter"))
             {
 
             }
 
-            // To‘lov tugmalari
             if (query.Data.StartsWith("payOrderCard_") || query.Data.StartsWith("payOrderCash_"))
             {
                 var idStr = query.Data.Split("_")[1];
@@ -191,7 +185,6 @@ public class TgBotService : BackgroundService
         var context2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
         var roleRepo = scope2.ServiceProvider.GetRequiredService<IRoleRepository>();
         var paginationHandler2 = new ProductPaginationHandler(_botClient, context2);
-        //var adressHandler2 = new AddressHandler(_botClient, context2);
 
         if (text.StartsWith("/start"))
         {
@@ -203,8 +196,8 @@ public class TgBotService : BackgroundService
         new KeyboardButton[] { "🔎 Mahsulotlarni Qidirish" }
     })
             {
-                ResizeKeyboard = true,   // Tugmalar ekran o'lchamiga moslashadi
-                OneTimeKeyboard = false  // Tugmalar doim ko‘rinadi
+                ResizeKeyboard = true,
+                OneTimeKeyboard = false
             };
 
             await _botClient.SendTextMessageAsync(
@@ -250,11 +243,9 @@ public class TgBotService : BackgroundService
         }
         else if (text.Equals("📦 Buyurtmalar"))
         {
-            // Foydalanuvchining buyurtmalarini olish
-
             var user = await context2.Users
-                .Include(x=>x.Orders)
-                .FirstOrDefaultAsync(o => o.TelegramId == chatId); // chatId yoki userId bo'lishi mumkin
+                .Include(x => x.Orders)
+                .FirstOrDefaultAsync(o => o.TelegramId == chatId);
             var orders = user.Orders.ToList();
 
             if (orders.Count == 0)
@@ -266,7 +257,7 @@ public class TgBotService : BackgroundService
                 var message2 = new StringBuilder("📦 Sizning buyurtmalaringiz:\n\n");
                 foreach (var order in orders)
                 {
-                    if(order.Status != OrderStatus.Completed)
+                    if (order.Status != OrderStatus.Completed)
                     {
                         message2.AppendLine($"ID: {order.Id}");
                         message2.AppendLine($"Status: {order.Status}");
@@ -281,7 +272,7 @@ public class TgBotService : BackgroundService
         }
         else if (text.Equals("💳 To‘lovlar"))
         {
-            var user =await context2.Users.FirstOrDefaultAsync(x=>x.TelegramId == chatId);
+            var user = await context2.Users.FirstOrDefaultAsync(x => x.TelegramId == chatId);
             // Foydalanuvchining to'lovlarini olish
             var payments = await context2.Payments
                 .Include(x => x.Order)
@@ -323,7 +314,6 @@ public class TgBotService : BackgroundService
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var paymentService = scope.ServiceProvider.GetRequiredService<IPaymentService>();
 
-            // Foydalanuvchini topamiz
             var user = await context.Users
                 .Include(u => u.Orders)
                 .ThenInclude(o => o.OrderItems)
@@ -335,7 +325,6 @@ public class TgBotService : BackgroundService
                 return;
             }
 
-            // Pending statusdagi orderlarni olish
             var pendingOrders = user.Orders
                 .Where(o => o.Status == OrderStatus.Pending)
                 .ToList();
@@ -379,7 +368,7 @@ public class TgBotService : BackgroundService
                 var messageText = new StringBuilder();
                 messageText.AppendLine($"🧾 Order ID: {order.Id}");
                 messageText.AppendLine($"📦 Mahsulotlar soni: {order.OrderItems.Count}");
-                messageText.AppendLine($"💰 To‘lov miqdori: {payment.Amount} $"); 
+                messageText.AppendLine($"💰 To‘lov miqdori: {payment.Amount} $");
                 messageText.AppendLine($"⏳ Status: {payment.Status}");
 
                 await _botClient.SendTextMessageAsync(chatId, messageText.ToString(), replyMarkup: keyboard);
@@ -394,11 +383,10 @@ public class TgBotService : BackgroundService
             using var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            // Foydalanuvchini topamiz
             var user = await context.Users
                 .Include(u => u.Card)
                 .Include(c => c.CartItems)
-                .ThenInclude(x=>x.ProductVariant)
+                .ThenInclude(x => x.ProductVariant)
                 .ThenInclude(v => v.Product)
                 .FirstOrDefaultAsync(u => u.TelegramId == chatId);
 
@@ -426,7 +414,7 @@ public class TgBotService : BackgroundService
                 var messageText = new StringBuilder();
                 messageText.AppendLine($"📦 Mahsulot: {variant.Product.Name}");
                 messageText.AppendLine($"🔹 Variant: {variant.Color}");
-                messageText.AppendLine($"💰 Umumiy Narxi: {variant.Price*item.Quantity} $");
+                messageText.AppendLine($"💰 Umumiy Narxi: {variant.Price * item.Quantity} $");
                 messageText.AppendLine($"🔢 Miqdor: {item.Quantity}");
 
                 await _botClient.SendTextMessageAsync(
@@ -443,9 +431,8 @@ public class TgBotService : BackgroundService
             using var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            // Foydalanuvchini topamiz
             var user = await context.Users
-                .Include(u => u.Card) // Card relation mavjud bo‘lsa
+                .Include(u => u.Card)
                 .FirstOrDefaultAsync(u => u.TelegramId == chatId);
 
             if (user == null || user.Card == null)

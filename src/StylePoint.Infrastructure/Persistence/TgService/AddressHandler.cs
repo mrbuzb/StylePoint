@@ -1,5 +1,6 @@
 ﻿using AutoLedger.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using StylePoint.Application.Dtos;
 using StylePoint.Domain.Entities;
 using System.Collections.Concurrent;
@@ -7,7 +8,6 @@ using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace StylePoint.Infrastructure.Persistence.TgService;
 
@@ -29,7 +29,6 @@ public class AddressHandler
         return scope.ServiceProvider.GetRequiredService<AppDbContext>();
     }
 
-    // Menyu ko‘rsatish
     public async Task ShowAddressMenuAsync(long chatId)
     {
         var buttons = new[]
@@ -45,7 +44,6 @@ public class AddressHandler
         );
     }
 
-    // CallbackQuery handle
     public async Task HandleCallbackQueryAsync(CallbackQuery query)
     {
         if (query.Data == null) return;
@@ -69,7 +67,6 @@ public class AddressHandler
         }
     }
 
-    // User xabarlarini ketma-ket qabul qilish
     public async Task HandleUserMessageAsync(Message message)
     {
         var chatId = message.Chat.Id;
@@ -104,7 +101,7 @@ public class AddressHandler
         {
             session.Country = text;
 
-            using var context = CreateContext(); // Har safar yangi context
+            using var context = CreateContext(); 
             var user = await context.Users.FirstOrDefaultAsync(u => u.TelegramId == chatId);
             if (user != null)
             {
@@ -128,10 +125,9 @@ public class AddressHandler
         }
     }
 
-    // Foydalanuvchi adreslarini ko‘rsatish
     private async Task ShowUserAddressesAsync(long chatId, int page = 1, int? messageId = null)
     {
-        using var context = CreateContext(); // Har safar yangi context
+        using var context = CreateContext(); 
         const int pageSize = 1;
 
         var user = await context.Users.FirstOrDefaultAsync(u => u.TelegramId == chatId);

@@ -11,7 +11,7 @@ public class OrderService
 {
     private readonly ITelegramBotClient _botClient;
     private readonly AppDbContext _context;
-    private const int PageSize = 3; // har safar 3 ta address ko‘rsatiladi
+    private const int PageSize = 3;
 
     public OrderService(ITelegramBotClient botClient, AppDbContext context)
     {
@@ -19,7 +19,6 @@ public class OrderService
         _context = context;
     }
 
-    // 1️⃣ User manzillarini pagination bilan ko‘rsatish
     public async Task ShowAddressesAsync(long chatId, int page = 1)
     {
         var user = await _context.Users
@@ -70,7 +69,6 @@ public class OrderService
             replyMarkup: new InlineKeyboardMarkup(buttons));
     }
 
-    // 2️⃣ User bir address tanlaganda order yaratish
     public async Task CreateOrderAsync(long chatId, long addressId)
     {
         var user = await _context.Users
@@ -99,7 +97,6 @@ public class OrderService
             return;
         }
 
-        // Order yaratish
         var order = new Order
         {
             UserId = user.UserId,
@@ -108,7 +105,6 @@ public class OrderService
             TotalPrice = user.CartItems.Sum(ci => ci.Quantity * ci.UnitPrice)
         };
 
-        // CartItemlarni OrderItemga aylantiramiz
         foreach (var ci in user.CartItems)
         {
             order.OrderItems.Add(new OrderItem
@@ -120,13 +116,12 @@ public class OrderService
         }
 
         _context.Orders.Add(order);
-        _context.CartItems.RemoveRange(user.CartItems); // Savatni tozalaymiz
+        _context.CartItems.RemoveRange(user.CartItems);
         await _context.SaveChangesAsync();
 
         await _botClient.SendTextMessageAsync(chatId, $"✅ Buyurtma yaratildi! Umumiy summa: {order.TotalPrice} $");
     }
 
-    // 3️⃣ Callback querylarni ishlash
     public async Task HandleCallbackQueryAsync(Telegram.Bot.Types.CallbackQuery query)
     {
         if (query.Data == null) return;

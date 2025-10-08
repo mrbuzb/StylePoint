@@ -1,9 +1,6 @@
 ﻿using AutoLedger.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using StylePoint.Application.Dtos;
-using StylePoint.Application.Interfaces;
-using StylePoint.Application.Services.Interfaces;
 using StylePoint.Domain.Entities;
 using System.Text;
 using Telegram.Bot;
@@ -112,9 +109,9 @@ public class ProductBotService
         var _context = CreateContext();
         List<Product> products = filterType switch
         {
-            "category" => (await _context.Products.Where(x=>x.CategoryId == itemId).ToListAsync()),
-            "brand" => (await _context.Products.Where(x=>x.BrandId == itemId).ToListAsync()),
-            "tag" => (await _context.Products.Where(x=>x.ProductTags.Any(x=>x.TagId == itemId)).ToListAsync()),
+            "category" => (await _context.Products.Where(x => x.CategoryId == itemId).ToListAsync()),
+            "brand" => (await _context.Products.Where(x => x.BrandId == itemId).ToListAsync()),
+            "tag" => (await _context.Products.Where(x => x.ProductTags.Any(x => x.TagId == itemId)).ToListAsync()),
             _ => new List<Product>()
         };
 
@@ -238,19 +235,8 @@ public class ProductBotService
             int variantId = int.Parse(query.Data.Replace("variant_", ""));
             await HandleVariantSelectionAsync(query.Message.Chat.Id, variantId);
         }
-        else if (query.Data.StartsWith("addcart_"))
-        {
-            int productId = int.Parse(query.Data.Replace("addcart_", ""));
-            await HandleAddProductToCartAsync(query.Message.Chat.Id, productId);
-        }
-        else if (query.Data.StartsWith("addcartvariant_"))
-        {
-            int variantId = int.Parse(query.Data.Replace("addcartvariant_", ""));
-            await HandleAddVariantToCartAsync(query.Message.Chat.Id, variantId);
-        }
     }
 
-    // Variantni tanlash
     private async Task HandleVariantSelectionAsync(long chatId, int variantId)
     {
 
@@ -280,16 +266,5 @@ public class ProductBotService
 
         await _botClient.SendTextMessageAsync(chatId, text, parseMode: ParseMode.Html,
             replyMarkup: new InlineKeyboardMarkup(confirmButtons));
-    }
-
-    // Mahsulotni savatga qo‘shish
-    private async Task HandleAddProductToCartAsync(long chatId, int productId)
-    {
-        await _botClient.SendTextMessageAsync(chatId, $"✅ Mahsulot savatga qo‘shildi!");
-    }
-
-    private async Task HandleAddVariantToCartAsync(long chatId, int variantId)
-    {
-        await _botClient.SendTextMessageAsync(chatId, $"✅ Variant savatga qo‘shildi!");
     }
 }
