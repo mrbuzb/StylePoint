@@ -6,4 +6,5 @@ public class PaymentCreateDto
 {
     public PaymentMethod Method { get; set; }
     public long OrderId { get; set; }
+    public decimal? Discount { get; set; } = null;
 }

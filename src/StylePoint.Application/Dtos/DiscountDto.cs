@@ -7,6 +7,6 @@ public class DiscountDto
     public decimal Percentage { get; set; }
     public DateTime ExpiryDate { get; set; }
     public bool IsActive { get; set; }
-
+    public long UsageLimit { get; set; }
     public decimal? FinalPrice { get; set; } 
 }

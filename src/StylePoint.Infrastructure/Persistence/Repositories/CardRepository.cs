@@ -40,7 +40,7 @@ public class CardRepository(AppDbContext _context) : ICardRepository
         var card =  _context.Cards.FirstOrDefault(c => c.CardNumber == cardNumber);
         if(card == null)
             throw new InvalidOperationException("Card not found.");
-        card.Balance = amount;
+        card.Balance += amount;
         _context.Cards.Update(card);
         await _context.SaveChangesAsync();
         return card.Balance;

@@ -24,6 +24,8 @@ public class TgBotService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly AddressHandler _addressHandler;
     private readonly ProductBotService _productBotService;
+    private static Dictionary<long, (long OrderId, bool WaitingForPromo, PaymentMethod Method)> PendingPromoEntries = new();
+
     public TgBotService(ILogger<TgBotService> logger, IConfiguration config, IServiceScopeFactory scopeFactory, ProductBotService productBotService)
     {
         _logger = logger;
@@ -76,7 +78,6 @@ public class TgBotService : BackgroundService
             var paginationHandler = new ProductPaginationHandler(_botClient, context);
             var query = update.CallbackQuery!;
 
-            // ProductPaginationHandler callbacklari
             if (query.Data!.StartsWith("page_")
                 || query.Data.StartsWith("variant_")
                 || query.Data.StartsWith("addcart_")
@@ -143,32 +144,74 @@ public class TgBotService : BackgroundService
             if (query.Data.StartsWith("payOrderCard_") || query.Data.StartsWith("payOrderCash_"))
             {
                 var idStr = query.Data.Split("_")[1];
-                if (long.TryParse(idStr, out var paymentId))
+                if (!long.TryParse(idStr, out var paymentId))
+                    return;
+
+                // To‘lov metodini saqlab olamiz
+                var method = query.Data.StartsWith("payOrderCard_") ? PaymentMethod.Card : PaymentMethod.Cash;
+
+                var keyboard = new InlineKeyboardMarkup(new[]
                 {
-                    var paymentService = scope.ServiceProvider.GetRequiredService<IPaymentService>();
+        new[]
+        {
+            InlineKeyboardButton.WithCallbackData("✅ Ha", $"promoYes_{paymentId}_{method}"),
+            InlineKeyboardButton.WithCallbackData("❌ Yo‘q", $"promoNo_{paymentId}_{method}")
+        }
+    });
 
-                    var dto = new PaymentCreateDto
-                    {
-                        OrderId = paymentId,
-                        Method = query.Data.StartsWith("payOrderCard_") ? PaymentMethod.Card : PaymentMethod.Cash
-                    };
+                await _botClient.EditMessageTextAsync(
+                    query.Message.Chat.Id,
+                    query.Message.MessageId,
+                    "💡 Sizda promokod bormi?",
+                    replyMarkup: keyboard
+                );
+            }
 
-                    try
-                    {
-                        var paymentDto = await paymentService.ProcessTelegramPaymentAsync(query.Message.Chat.Id, dto);
-                        await _botClient.AnswerCallbackQueryAsync(query.Id, "✅ To‘lov amalga oshirildi!");
-                        await _botClient.EditMessageTextAsync(
-                            query.Message.Chat.Id,
-                            query.Message.MessageId,
-                            $"✅ Order {paymentDto.OrderId} uchun to‘lov muvaffaqiyatli amalga oshirildi."
-                        );
-                    }
-                    catch (Exception ex)
-                    {
-                        await _botClient.AnswerCallbackQueryAsync(query.Id, $"❌ Xato: {ex.Message}");
-                    }
+            if (query.Data.StartsWith("promoYes_"))
+            {
+                var parts = query.Data.Split("_");
+                var paymentId = long.Parse(parts[1]);
+                var method = Enum.Parse<PaymentMethod>(parts[2]);
+
+                PendingPromoEntries[query.Message.Chat.Id] = (paymentId, true, method);
+
+                await _botClient.EditMessageTextAsync(
+                    query.Message.Chat.Id,
+                    query.Message.MessageId,
+                    "Iltimos, promokodingizni yuboring:"
+                );
+            }
+            if (query.Data.StartsWith("promoNo_"))
+            {
+                var paymentId = long.Parse(query.Data.Split("_")[1]);
+                PendingPromoEntries.Remove(query.Message.Chat.Id);
+
+                var paymentService = scope.ServiceProvider.GetRequiredService<IPaymentService>();
+                var dto = new PaymentCreateDto
+                {
+                    OrderId = paymentId,
+                    Method = query.Data.StartsWith("promoNo_") && query.Data.Contains("Card") ? PaymentMethod.Card : PaymentMethod.Cash
+                };
+
+                try
+                {
+                    var paymentDto = await paymentService.ProcessTelegramPaymentAsync(query.Message.Chat.Id, dto);
+                    await _botClient.AnswerCallbackQueryAsync(query.Id, "✅ To‘lov amalga oshirildi!");
+                    await _botClient.EditMessageTextAsync(
+                        query.Message.Chat.Id,
+                        query.Message.MessageId,
+                        $"✅ Order {paymentDto.OrderId} uchun to‘lov muvaffaqiyatli amalga oshirildi."
+                    );
+                }
+                catch (Exception ex)
+                {
+                    await _botClient.AnswerCallbackQueryAsync(query.Id, $"❌ Xato: {ex.Message}");
                 }
             }
+
+
+
+
 
             return;
         }
@@ -177,14 +220,66 @@ public class TgBotService : BackgroundService
         if (update.Type != UpdateType.Message || update.Message == null)
             return;
 
+
+
         var message = update.Message;
         var chatId = message.Chat.Id;
         var text = message.Text ?? "";
+
 
         using var scope2 = _scopeFactory.CreateScope();
         var context2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
         var roleRepo = scope2.ServiceProvider.GetRequiredService<IRoleRepository>();
         var paginationHandler2 = new ProductPaginationHandler(_botClient, context2);
+
+
+        if (PendingPromoEntries.TryGetValue(chatId, out var entry) && entry.WaitingForPromo)
+        {
+            var orderId = entry.OrderId;
+            var method = entry.Method;
+            var discountService = scope2.ServiceProvider.GetRequiredService<IDiscountService>();
+
+            var user = await context2.Users.FirstOrDefaultAsync(u => u.TelegramId == chatId);
+            decimal? discountAmount = await discountService.ValidateDiscountAsync(text, user.UserId);
+
+            if (discountAmount != null)
+            {
+                await _botClient.SendTextMessageAsync(chatId, $"✅ Promokod muvaffaqiyatli qo‘llandi! Chegirma: {discountAmount}%");
+            }
+            else
+            {
+                await _botClient.SendTextMessageAsync(chatId, "❌ Promokod noto‘g‘ri yoki muddati tugagan.");
+                PendingPromoEntries.Remove(chatId);
+                return;
+            }
+
+            var paymentService = scope2.ServiceProvider.GetRequiredService<IPaymentService>();
+            var dto = new PaymentCreateDto
+            {
+                OrderId = orderId,
+                Method = method,
+                Discount = discountAmount
+            };
+
+            PaymentDto paymentDto;
+            try
+            {
+                paymentDto = await paymentService.ProcessTelegramPaymentAsync(chatId, dto);
+            }
+            catch (Exception ex)
+            {
+                await _botClient.SendTextMessageAsync(chatId, $"❌ Xato: {ex.Message}");
+                PendingPromoEntries.Remove(chatId);
+                return;
+            }
+            await discountService.ApplyDiscountAsync(user.UserId, text);
+            await _botClient.SendTextMessageAsync(chatId, $"✅ Order {paymentDto.OrderId} uchun to‘lov amalga oshirildi!\n💰 Summa : {paymentDto.Amount} $");
+
+            PendingPromoEntries.Remove(chatId);
+            return;
+        }
+
+
 
         if (text.StartsWith("/start"))
         {

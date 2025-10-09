@@ -19,7 +19,7 @@ public class User
 
     public Card? Card { get; set; }
 
-
+    public ICollection<UserDiscount> Discounts { get; set; }
     public ICollection<RefreshToken> RefreshTokens { get; set; }
     public ICollection<Order> Orders { get; set; }
     public ICollection<CartItem> CartItems { get; set; } 

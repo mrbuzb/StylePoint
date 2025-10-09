@@ -14,26 +14,10 @@ public class DiscountService : IDiscountService
         _discountRepository = discountRepository;
     }
 
-    public async Task<DiscountDto?> ApplyDiscountAsync(string code, long userId, decimal orderAmount)
+
+    public async Task<decimal> ApplyDiscountAsync(long userId, string code)
     {
-        var discount = (await _discountRepository.GetAllAsync())
-            .FirstOrDefault(d => d.Code == code && d.ExpiryDate > DateTime.UtcNow);
-
-        if (discount == null)
-            return null;
-
-        decimal discountedAmount = orderAmount - (orderAmount * discount.Percentage / 100m);
-        if (discountedAmount < 0)
-            discountedAmount = 0;
-
-        return new DiscountDto
-        {
-            Id = discount.Id,
-            Code = discount.Code,
-            Percentage = discount.Percentage,
-            ExpiryDate = discount.ExpiryDate,
-            FinalPrice = discountedAmount
-        };
+        return await _discountRepository.ApplyDiscountAsync(userId, code);
     }
 
     public async Task<DiscountDto> CreateAsync(DiscountCreateDto dto)
@@ -42,7 +26,9 @@ public class DiscountService : IDiscountService
         {
             Code = dto.Code,
             Percentage = dto.Percentage,
-            ExpiryDate = dto.ExpiryDate
+            ExpiryDate = dto.ExpiryDate,
+            UsageLimit = dto.UsageLimit,
+            IsActive = true,
         };
 
         await _discountRepository.AddAsync(discount);
@@ -126,17 +112,27 @@ public class DiscountService : IDiscountService
             .ToList();
     }
 
-    public async Task<bool> ValidateDiscountAsync(string code)
+    public async Task<decimal?> ValidateDiscountAsync(string code, long userId)
     {
-        var discounts = await _discountRepository.GetAllAsync();
-        var discount = discounts.FirstOrDefault(d => d.Code == code);
+        var discount = await _discountRepository.GetByCodeAsync(code);
 
         if (discount == null)
-            return false;
+            return null;
 
         if (discount.ExpiryDate < DateTime.UtcNow)
-            return false;
+            return null;
 
-        return true;
+        if (discount.IsActive == false)
+            return null;
+
+        if (discount.RedeemedUsers.Any(ud => ud.UserId == userId))
+            return null;
+
+        if (discount.UsageLimit <= discount.RedeemedUsers.Count)
+        {
+            return null;
+        }
+        return discount.Percentage;
     }
+
 }

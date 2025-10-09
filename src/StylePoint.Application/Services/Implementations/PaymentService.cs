@@ -28,11 +28,18 @@ public class PaymentService : IPaymentService
         // Telegram userni topish
         var user = await _userRepo.GetWithOrdersAndCardByTelegramIdAsync(telegramId);
 
+
+
         if (user == null)
             throw new InvalidOperationException("Telegram user not found.");
 
         var order = user.Orders.FirstOrDefault(o => o.Id == dto.OrderId);
 
+        var amount = order.TotalPrice;
+        if (dto.Discount is not null)
+        {
+            amount -= (order.TotalPrice * dto.Discount.Value / 100);
+        }
         if (order == null)
             throw new InvalidOperationException("Order not found for this user.");
 
@@ -45,7 +52,7 @@ public class PaymentService : IPaymentService
             if (card == null)
                 throw new NotAllowedException("Card not found for this user.");
 
-            if (card.Balance < order.TotalPrice)
+            if (card.Balance < amount)
                 throw new NotAllowedException("Card balance is insufficient");
         }
 
@@ -65,15 +72,17 @@ public class PaymentService : IPaymentService
 
         var payment = new Payment();
 
+        
+
         if (dto.Method == PaymentMethod.Card)
         {
             var card = user.Card!;
-            card.Balance -= order.TotalPrice;
+            card.Balance -= amount;
             await _cardRepo.UpdateAsync(card);
 
             payment = new Payment
             {
-                Amount = order.TotalPrice,
+                Amount = amount,
                 Method = dto.Method,
                 OrderId = dto.OrderId,
                 Status = PaymentStatus.Paid,
@@ -87,7 +96,7 @@ public class PaymentService : IPaymentService
         {
             payment = new Payment
             {
-                Amount = order.TotalPrice,
+                Amount = amount,
                 Method = dto.Method,
                 OrderId = dto.OrderId,
                 Status = PaymentStatus.CashPay,
@@ -224,7 +233,7 @@ public class PaymentService : IPaymentService
             Status = payment.Status,
             OrderId = payment.OrderId,
             UserId = userId,
-            CardId = payment.CardId
+            CardId = payment.CardId,
         };
     }
 

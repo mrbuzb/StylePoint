@@ -1,4 +1,7 @@
-﻿using StylePoint.Application.Services.Interfaces;
+﻿using Microsoft.AspNetCore.Http;
+using StylePoint.Application.Services.Interfaces;
+using System.Net.Http;
+using System.Security.Claims;
 
 namespace StylePoint.Api.Endpoints;
 
@@ -9,10 +12,11 @@ public static class DiscountEndpoints
         var discountGroup = app.MapGroup("/api/discounts")
                                .WithTags("DiscountManagement").RequireAuthorization();
 
-        discountGroup.MapPost("/apply", async (string code, decimal orderAmount, long userId, IDiscountService service) =>
+        discountGroup.MapPost("/apply", async (string code,IDiscountService service,HttpContext httpContext) =>
         {
-            var discount = await service.ApplyDiscountAsync(code, userId, orderAmount);
-            return discount is not null ? Results.Ok(discount) : Results.NotFound(new { message = "Invalid or expired discount code" });
+            var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
+            var discount = await service.ApplyDiscountAsync(userId,code);
+            return Results.Ok(discount);
         })
         .WithName("ApplyDiscount");
 
@@ -23,9 +27,10 @@ public static class DiscountEndpoints
         })
         .WithName("GetActiveDiscounts");
 
-        discountGroup.MapGet("/validate/{code}", async (string code, IDiscountService service) =>
+        discountGroup.MapGet("/validate/{code}", async (string code, IDiscountService service,HttpContext httpContext) =>
         {
-            var isValid = await service.ValidateDiscountAsync(code);
+            var userId = long.Parse(httpContext.User.FindFirstValue("UserId")!);
+            var isValid = await service.ValidateDiscountAsync(code,userId);
             return Results.Ok(new { code, isValid });
         })
         .WithName("ValidateDiscount");
