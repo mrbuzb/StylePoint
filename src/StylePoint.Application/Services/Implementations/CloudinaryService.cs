@@ -19,7 +19,7 @@ public class CloudinaryService : ICloudService
         _cloudinary = new Cloudinary(account);
     }
 
-    public async Task<string> UploadProfileImageAsync(IFormFile file)
+    public async Task<string> UploadImageAsync(IFormFile file)
     {
         if (file == null || file.Length == 0)
             throw new ArgumentException("Rasm fayli bo‘lishi shart.");

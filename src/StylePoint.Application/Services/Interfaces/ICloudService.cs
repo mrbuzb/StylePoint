@@ -4,6 +4,6 @@ namespace StylePoint.Application.Services.Interfaces;
 
 public interface ICloudService
 {
-    Task<string> UploadProfileImageAsync(IFormFile file);
+    Task<string> UploadImageAsync(IFormFile file);
     Task<string> UploadTrackAsync(IFormFile file);
 }

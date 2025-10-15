@@ -14,6 +14,20 @@ public static class AdminEndpoints
             .WithTags("AdminManagement")
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Admin,SuperAdmin,User" });
 
+        adminGroup.MapPut("/top-up-card", async (Guid cardNumber, long amount, IPaymentService service) =>
+        {
+            return Results.Ok(await service.TopUpCardAsync(cardNumber, amount));
+        })
+        .WithName("TopUpCard");
+
+        adminGroup.MapPost("/upload-product-img", async (IFormFile file, ICloudService service) =>
+        {
+            return Results.Ok(await service.UploadImageAsync(file));
+        })
+        .WithName("UploadProductImage")
+        .DisableAntiforgery();
+
+
         adminGroup.MapPost("/product", async ([FromBody] ProductCreateDto dto, IProductService service) =>
         {
             var product = await service.AddProductAsync(dto);
@@ -29,11 +43,7 @@ public static class AdminEndpoints
         })
         .WithName("UpdateProduct");
 
-        adminGroup.MapPut("/top-up-card", async (Guid cardNumber,long amount, IPaymentService service) =>
-        {
-            return Results.Ok(await service.TopUpCardAsync(cardNumber,amount));
-        })
-        .WithName("TopUpCard");
+        
 
         adminGroup.MapDelete("product/{id:long}", async (long id, IProductService service) =>
         {

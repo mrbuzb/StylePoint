@@ -31,7 +31,7 @@ public class UserService(IUserRepository _userRepository, ICloudService _cloudSe
     {
         var user = await _userRepository.GetUserByIdAsync(userId);
 
-        user.ProfileImgUrl = await _cloudService.UploadProfileImageAsync(file);
+        user.ProfileImgUrl = await _cloudService.UploadImageAsync(file);
         await _userRepository.UpdateUserAsync(user);
     }
 
