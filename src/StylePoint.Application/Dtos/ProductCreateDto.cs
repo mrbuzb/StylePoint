@@ -9,6 +9,7 @@ public class ProductCreateDto
     public decimal Price { get; set; }
     public decimal? DiscountPrice { get; set; }
     public string Image { get; set; }
+    public string SecretCode { get; set; }
     public long CategoryId { get; set; }
     public long BrandId { get; set; }
 

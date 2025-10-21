@@ -97,10 +97,10 @@ public class ProductPaginationHandler
         captionBuilder.AppendLine(product.DiscountPrice.HasValue
             ? $"💰 <b>{product.DiscountPrice} $</b> (avval {product.Price} $)"
             : $"💰 <b>{product.Price} $</b>");
+        //captionBuilder.AppendLine($"🔑 <b>SecretCode:</b> {product.SecretCode}");
         if (!string.IsNullOrEmpty(product.Description))
             captionBuilder.AppendLine($"\n{product.Description}");
 
-        // === Variant tugmalari ===
         var buttons = new List<InlineKeyboardButton[]>();
 
         if (product.Variants != null && product.Variants.Any())

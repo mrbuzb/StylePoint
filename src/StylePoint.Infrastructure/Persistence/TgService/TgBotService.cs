@@ -17,13 +17,14 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace StylePoint.Infrastructure.Persistence.TgService;
 
-public class TgBotService : BackgroundService
+public class TgBotService : BackgroundService, ITelegramBotService
 {
     private readonly ILogger<TgBotService> _logger;
     private readonly ITelegramBotClient _botClient;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly AddressHandler _addressHandler;
     private readonly ProductBotService _productBotService;
+    private readonly string _channelId = "@StylePointMarket";
     private static Dictionary<long, (long OrderId, bool WaitingForPromo, PaymentMethod Method)> PendingPromoEntries = new();
 
     public TgBotService(ILogger<TgBotService> logger, IConfiguration config, IServiceScopeFactory scopeFactory, ProductBotService productBotService)
@@ -38,6 +39,83 @@ public class TgBotService : BackgroundService
         _addressHandler = new AddressHandler(_botClient, _scopeFactory);
         _productBotService = new ProductBotService(_botClient, _scopeFactory);
     }
+
+    public async Task NotifyNewProductAsync(Product product)
+    {
+        var botUsername = "StylePointUzb_Bot";
+        var deepLinkStart = $"https://t.me/{botUsername}?start=start";
+        var deepLinkKey = $"https://t.me/{botUsername}?start={product.SecretCode}";
+
+        var captionBuilder = new StringBuilder();
+        captionBuilder.AppendLine("<b>🆕 Yangi mahsulot keldi!</b>\n");
+        captionBuilder.AppendLine($"<b>📦 Nomi:</b> {product.Name}");
+        captionBuilder.AppendLine($"<b>💰 Narxi:</b> {product.Price:N0} so‘m");
+        if (product.DiscountPrice > 0)
+            captionBuilder.AppendLine($"<b>💸 Aksiya narxi:</b> {product.DiscountPrice:N0} so‘m");
+        //captionBuilder.AppendLine($"<b>📂 Kategoriya:</b> {(product.Category?.Name ?? "Aniqlanmagan")}");
+        //captionBuilder.AppendLine($"<b>🧩 Maxfiy kod:</b> <code>{product.SecretCode}</code>\n");
+        captionBuilder.AppendLine("📝 <b>Tavsif:</b>");
+        captionBuilder.AppendLine(product.Description);
+        captionBuilder.AppendLine("\n🛍️ <i>Agar siz botdan foydalanmagan bo‘lsangiz, avval “START” tugmasini bosing.</i>");
+        captionBuilder.AppendLine("Keyin esa <b>🔍 Mahsulotlarni qidirish</b> tugmasini bosing 👇");
+
+        var replyMarkup = new InlineKeyboardMarkup(new[]
+        {
+        InlineKeyboardButton.WithUrl("🤖 Botni ochish (START)", $"https://t.me/{botUsername}"),
+        InlineKeyboardButton.WithUrl("🔍 Mahsulotlarni qidirish", deepLinkKey)
+    });
+
+        try
+        {
+            if (!string.IsNullOrEmpty(product.ImageUrl))
+            {
+                if (product.ImageUrl.StartsWith("data:image"))
+                {
+                    // Base64 formatdagi rasmni yuborish
+                    var base64Data = product.ImageUrl.Substring(product.ImageUrl.IndexOf(",") + 1);
+                    var bytes = Convert.FromBase64String(base64Data);
+                    await using var stream = new MemoryStream(bytes);
+
+                    await _botClient.SendPhotoAsync(
+                        chatId: _channelId,
+                        photo: InputFile.FromStream(stream, "product.jpg"),
+                        caption: captionBuilder.ToString(),
+                        parseMode: ParseMode.Html,
+                        replyMarkup: replyMarkup
+                    );
+                }
+                else
+                {
+                    // URL orqali rasm yuborish
+                    await _botClient.SendPhotoAsync(
+                        chatId: _channelId,
+                        photo: InputFile.FromUri(product.ImageUrl),
+                        caption: captionBuilder.ToString(),
+                        parseMode: ParseMode.Html,
+                        replyMarkup: replyMarkup
+                    );
+                }
+            }
+            else
+            {
+                // Agar rasm yo‘q bo‘lsa, faqat matn yuborish
+                await _botClient.SendTextMessageAsync(
+                    chatId: _channelId,
+                    text: captionBuilder.ToString(),
+                    parseMode: ParseMode.Html,
+                    replyMarkup: replyMarkup
+                );
+            }
+        }
+        catch (Exception ex)
+        {
+            await _botClient.SendTextMessageAsync(
+                chatId: _channelId,
+                text: $"⚠️ Xato: {ex.Message}"
+            );
+        }
+    }
+
 
 
 
@@ -147,7 +225,6 @@ public class TgBotService : BackgroundService
                 if (!long.TryParse(idStr, out var paymentId))
                     return;
 
-                // To‘lov metodini saqlab olamiz
                 var method = query.Data.StartsWith("payOrderCard_") ? PaymentMethod.Card : PaymentMethod.Cash;
 
                 var keyboard = new InlineKeyboardMarkup(new[]
@@ -283,48 +360,77 @@ public class TgBotService : BackgroundService
 
         if (text.StartsWith("/start"))
         {
-            var keyboard = new ReplyKeyboardMarkup(new[]
+            var args = update.Message.Text.Split(' ', 2);
+            var param = args.Length > 1 ? args[1] : null;
+
+            if (!string.IsNullOrEmpty(param))
+            {
+                var product = await context2.Products
+                    .Include(p => p.Variants)
+                    .FirstOrDefaultAsync(p => p.SecretCode == param);
+
+                if (product != null)
+                {
+                    var paginationHandler = new ProductPaginationHandler(_botClient, context2);
+                    await _productBotService.ShowProductAsync(
+                        chatId: update.Message.Chat.Id,
+                        products: new List<Product> { product },
+                        page: 1
+                    );
+                }
+                else
+                {
+                    await _botClient.SendTextMessageAsync(
+                        chatId: update.Message.Chat.Id,
+                        text: "❌ Bunday maxfiy kodli mahsulot topilmadi."
+                    );
+                }
+            }
+            else
+            {
+                var keyboard = new ReplyKeyboardMarkup(new[]
     {
         new KeyboardButton[] { "📦 Mahsulotlar", "🛒 Savat", "📦 Buyurtmalar" },
         new KeyboardButton[] { "💳 To‘lovlar", "👛 Hamyon", "🏠 Manzillar" },
         new KeyboardButton[] { "💰 To‘lash", "🧾 Order yaratish", "❓ Yordam" },
         new KeyboardButton[] { "🔎 Mahsulotlarni Qidirish" }
     })
-            {
-                ResizeKeyboard = true,
-                OneTimeKeyboard = false
-            };
-
-            await _botClient.SendTextMessageAsync(
-                chatId,
-                "Salom 👋 StylePoint onlayn do‘kon botiga xush kelibsiz! Quyidagi tugmalardan foydalanishingiz mumkin:",
-                replyMarkup: keyboard
-            );
-
-
-            var exists = await context2.Users.AnyAsync(x => x.TelegramId == chatId);
-            if (!exists)
-            {
-                var user = new Domain.Entities.User
                 {
-                    TelegramId = chatId,
-                    FirstName = message.Chat.FirstName ?? "Anon",
-                    LastName = message.Chat.LastName ?? "Anon",
-                    RoleId = await roleRepo.GetRoleIdAsync("User"),
+                    ResizeKeyboard = true,
+                    OneTimeKeyboard = false
                 };
 
-                await context2.Users.AddAsync(user);
-                await context2.SaveChangesAsync();
+                await _botClient.SendTextMessageAsync(
+                    chatId,
+                    "Salom 👋 StylePoint onlayn do‘kon botiga xush kelibsiz! Quyidagi tugmalardan foydalanishingiz mumkin:",
+                    replyMarkup: keyboard
+                );
 
-                var card = new Card
+
+                var exists = await context2.Users.AnyAsync(x => x.TelegramId == chatId);
+                if (!exists)
                 {
-                    UserId = user.UserId,
-                    Balance = 0,
-                    CardNumber = Guid.NewGuid()
-                };
+                    var user = new Domain.Entities.User
+                    {
+                        TelegramId = chatId,
+                        FirstName = message.Chat.FirstName ?? "Anon",
+                        LastName = message.Chat.LastName ?? "Anon",
+                        RoleId = await roleRepo.GetRoleIdAsync("User"),
+                    };
 
-                await context2.Cards.AddAsync(card);
-                await context2.SaveChangesAsync();
+                    await context2.Users.AddAsync(user);
+                    await context2.SaveChangesAsync();
+
+                    var card = new Card
+                    {
+                        UserId = user.UserId,
+                        Balance = 0,
+                        CardNumber = Guid.NewGuid()
+                    };
+
+                    await context2.Cards.AddAsync(card);
+                    await context2.SaveChangesAsync();
+                }
             }
         }
         else if (text.Equals("❓ Yordam"))
@@ -368,7 +474,6 @@ public class TgBotService : BackgroundService
         else if (text.Equals("💳 To‘lovlar"))
         {
             var user = await context2.Users.FirstOrDefaultAsync(x => x.TelegramId == chatId);
-            // Foydalanuvchining to'lovlarini olish
             var payments = await context2.Payments
                 .Include(x => x.Order)
                 .Where(p => p.Order.UserId == user.UserId).ToListAsync();

@@ -1,6 +1,7 @@
 ﻿using StylePoint.Application.Dtos;
 using StylePoint.Application.Interfaces;
 using StylePoint.Application.Services.Interfaces;
+using StylePoint.Core.Errors;
 using StylePoint.Domain.Entities;
 
 namespace StylePoint.Application.Services.Implementations;
@@ -9,11 +10,12 @@ public class ProductService : IProductService
 {
     private readonly IProductRepository _repo;
     private readonly ICloudService _cloud;
-
-    public ProductService(IProductRepository repo, ICloudService cloud)
+    private readonly ITelegramBotService _telegramBotService;
+    public ProductService(IProductRepository repo, ICloudService cloud, ITelegramBotService telegramBotService)
     {
         _repo = repo;
         _cloud = cloud;
+        _telegramBotService = telegramBotService;
     }
 
 
@@ -28,6 +30,10 @@ public class ProductService : IProductService
 
     public async Task<long> AddProductAsync(ProductCreateDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.SecretCode))
+        {
+            throw new NotAllowedException("Secret Code Kiriting");
+        }
         var product = new Product
         {
             Name = dto.Name,
@@ -37,6 +43,7 @@ public class ProductService : IProductService
             BrandId = dto.BrandId,
             DiscountPrice = dto.DiscountPrice,
             Price = dto.Price,
+            SecretCode = dto.SecretCode,
             Variants = dto.Variants.Select(v => new ProductVariant
             {
                 Size = v.Size,
@@ -50,7 +57,12 @@ public class ProductService : IProductService
             }).ToList()
         };
 
-        return await _repo.AddAsync(product);
+
+        var id =  await _repo.AddAsync(product);
+
+        await _telegramBotService.NotifyNewProductAsync(product);
+        return id;
+
     }
 
 
@@ -66,6 +78,7 @@ public class ProductService : IProductService
         product.DiscountPrice = dto.DiscountPrice ?? product.DiscountPrice;
         product.CategoryId = dto.CategoryId ?? product.CategoryId;
         product.BrandId = dto.BrandId ?? product.BrandId;
+        product.SecretCode = dto.SecretCode ?? product.SecretCode;
 
         await _repo.UpdateAsync(product);
         return MapToDto(product);
@@ -132,6 +145,7 @@ public class ProductService : IProductService
             ImageUrl = product.ImageUrl,
             CategoryName = product.Category.Name,
             BrandName = product.Brand.Name,
+            SecretCode = product.SecretCode,
             Variants = product.Variants.Select(v => new ProductVariantDto
             {
                 Id = v.Id,

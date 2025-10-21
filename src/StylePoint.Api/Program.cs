@@ -2,6 +2,7 @@ using AutoLedger.Api.Configurations;
 using StylePoint.Api.Endpoints;
 using StylePoint.Api.Extensions;
 using StylePoint.Api.Middlewares;
+using StylePoint.Application.Services.Interfaces;
 using StylePoint.Infrastructure.Persistence.TgService;
 using Telegram.Bot;
 
@@ -39,7 +40,10 @@ if (string.IsNullOrEmpty(botToken))
     throw new InvalidOperationException("? Telegram bot token topilmadi!");
 builder.Services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(botToken));
 builder.Services.AddSingleton<ProductBotService>();
-builder.Services.AddHostedService<TgBotService>();
+
+builder.Services.AddSingleton<ITelegramBotService, TgBotService>();
+builder.Services.AddSingleton<IHostedService>(sp => (TgBotService)sp.GetRequiredService<ITelegramBotService>());
+
 
 ServiceCollectionExtensions.AddSwaggerWithJwt(builder.Services);
 

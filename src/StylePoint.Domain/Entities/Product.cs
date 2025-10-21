@@ -8,6 +8,7 @@ public class Product
     public decimal Price { get; set; }
     public decimal? DiscountPrice { get; set; }
     public string ImageUrl { get; set; } = null!;
+    public string SecretCode { get; set; }
 
     public long CategoryId { get; set; }
     public Category Category { get; set; } = null!;

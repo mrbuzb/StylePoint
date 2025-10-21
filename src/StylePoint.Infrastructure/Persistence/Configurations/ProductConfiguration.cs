@@ -13,6 +13,8 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.Description).HasMaxLength(500);
         builder.Property(x => x.Price).HasColumnType("decimal(18,2)");
         builder.Property(x => x.DiscountPrice).HasColumnType("decimal(18,2)");
+        builder.Property(x => x.SecretCode).IsRequired();
+        builder.HasIndex(x=>x.SecretCode).IsUnique();
 
         builder.HasOne(x => x.Category)
                .WithMany(c => c.Products)

@@ -15,7 +15,6 @@ public class ProductBotService
     private readonly ITelegramBotClient _botClient;
     private readonly IServiceScopeFactory _scopeFactory;
 
-    // sessionlar
     private readonly Dictionary<long, string> _userFilterSession = new();
     private readonly Dictionary<long, List<Product>> _userProductsSession = new();
 
@@ -32,7 +31,6 @@ public class ProductBotService
         return scope.ServiceProvider.GetRequiredService<AppDbContext>();
     }
 
-    // 🔎 Mahsulot qidirish tugmasi bosilganda
     public async Task HandleSearchCommandAsync(long chatId)
     {
         var buttons = new[]
@@ -48,7 +46,6 @@ public class ProductBotService
             replyMarkup: new InlineKeyboardMarkup(buttons));
     }
 
-    // Foydalanuvchi filter turini tanladi
     public async Task HandleFilterSelectionAsync(long chatId, string filterType)
     {
         _userFilterSession[chatId] = filterType;
@@ -101,7 +98,6 @@ public class ProductBotService
             replyMarkup: new InlineKeyboardMarkup(buttons));
     }
 
-    // Foydalanuvchi filter item tanladi
     public async Task HandleFilterItemSelectionAsync(long chatId, long itemId)
     {
         if (!_userFilterSession.TryGetValue(chatId, out var filterType))
@@ -125,7 +121,6 @@ public class ProductBotService
         await ShowProductAsync(chatId, products, 1);
     }
 
-    // Buyer dagi kabi product ko‘rsatish
     public async Task ShowProductAsync(long chatId, List<Product> products, int page = 1)
     {
         if (products == null || !products.Any())
@@ -142,10 +137,10 @@ public class ProductBotService
         captionBuilder.AppendLine(product.DiscountPrice.HasValue
             ? $"💰 <b>{product.DiscountPrice} $</b> (avval {product.Price} $)"
             : $"💰 <b>{product.Price} $</b>");
+        //captionBuilder.AppendLine($"🔑 <b>SecretCode:</b> {product.SecretCode}");
         if (!string.IsNullOrEmpty(product.Description))
             captionBuilder.AppendLine($"\n{product.Description}");
 
-        // Variant tugmalari
         var buttons = new List<InlineKeyboardButton[]>();
         if (product.Variants != null && product.Variants.Any())
         {
@@ -166,7 +161,6 @@ public class ProductBotService
             });
         }
 
-        // Navigatsiya
         var navRow = new List<InlineKeyboardButton>();
         if (page > 1)
             navRow.Add(InlineKeyboardButton.WithCallbackData("⬅️ Oldingi", $"page_{page - 1}"));
@@ -207,7 +201,6 @@ public class ProductBotService
         }
     }
 
-    // Callback query handler
     public async Task HandleCallbackQueryAsync(CallbackQuery query)
     {
         if (query.Data == null) return;
